@@ -1,0 +1,26 @@
+# Load the required libraries
+library(dplyr)
+library(lubridate)
+
+# Assume 'data' is your dataframe from Spotfire
+data <- GENSCAPE_PIPEFLOW_REPORTS
+
+# Step 1: Calculate the average of the top 10 production values per region
+average_top_10 <- data %>%
+  group_by(REGION) %>%
+  top_n(10, production) %>%
+  summarise(AverageTop10 = mean(production))
+
+# Step 2: Generate a table of production by day for all regions using the average
+# Creating a sequence of dates from today to the end of the current year
+days_to_end_of_year <- seq.Date(from = today(), to = as.Date(paste0(year(today()), "-12-31")), by = "day")
+
+# Creating the final table
+daily_production_by_region <- expand.grid(Date = days_to_end_of_year, REGION = unique(data$REGION))
+daily_production_by_region <- merge(daily_production_by_region, average_top_10, by = "REGION", all.x = TRUE)
+
+# Setting the production to the calculated average for each region
+daily_production_by_region$Production <- daily_production_by_region$AverageTop10
+
+# Output the final table
+daily_production_by_region
