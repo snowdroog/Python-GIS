@@ -1,0 +1,39 @@
+import clr
+clr.AddReference('System')
+from System import DateTime, TimeSpan
+from System.ComponentModel import INotifyPropertyChanged, PropertyChangedEventArgs
+
+# Custom document class that notifies property changes
+class NotifyingDocument(INotifyPropertyChanged):
+    def __init__(self):
+        self._shutdown_date = None
+        self.PropertyChanged = None
+
+    def get_ShutdownDate(self):
+        return self._shutdown_date or DateTime.Today
+
+    def set_ShutdownDate(self, value):
+        if self._shutdown_date != value:
+            self._shutdown_date = value
+            self.raise_property_changed('ShutdownDate')
+
+    def raise_property_changed(self, property_name):
+        if self.PropertyChanged:
+            self.PropertyChanged(self, PropertyChangedEventArgs(property_name))
+
+# Define the event handler for property changes
+def on_property_changed(sender, args):
+    try:
+        if args.PropertyName == 'ShutdownDate':
+            # Calculate new dates based on the property changed
+            # Perform updates and any other necessary logic
+            pass
+    except Exception as e:
+        print("Error during property change handling:", e)
+
+# Create a document instance and assign the event handler
+doc = NotifyingDocument()
+doc.PropertyChanged += on_property_changed
+
+# Set an initial date to trigger the property changed event
+doc.ShutdownDate = DateTime.Today.AddDays(30)
