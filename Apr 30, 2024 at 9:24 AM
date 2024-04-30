@@ -1,0 +1,61 @@
+import clr
+clr.AddReference('System')
+from System import DateTime, TimeSpan
+from System.ComponentModel import INotifyPropertyChanged, PropertyChangedEventArgs
+
+# Assuming 'Application.Document' is a .NET object from an external library that we're extending to include property change notification
+class ExtendedDocument(INotifyPropertyChanged):
+    def __init__(self, doc):
+        self._doc = doc
+        self.PropertyChanged = None
+    
+    def get_Property(self, name):
+        return self._doc.Properties[name]
+
+    def set_Property(self, name, value):
+        if self._doc.Properties[name] != value:
+            self._doc.Properties[name] = value
+            self.OnPropertyChanged(name)
+
+    def OnPropertyChanged(self, propertyName):
+        if self.PropertyChanged:
+            self.PropertyChanged(self, PropertyChangedEventArgs(propertyName))
+
+def property_changed(sender, args):
+    try:
+        if args.PropertyName in ['PlatformShutdownDate', 'PlatformShutdownPeriod', 'PlatformRestartPeriod']:
+            update_dates(sender)
+    except Exception as e:
+        print("Exception when updating dates:", str(e))
+
+def update_dates(extended_doc):
+    # Parse dates and periods from document properties
+    anchor_date = DateTime.Parse(extended_doc.get_Property('PlatformShutdownDate'))
+    period_a = TimeSpan(days=int(extended_doc.get_Property('PlatformShutdownPeriod')))
+    period_b = TimeSpan(days=int(extended_doc.get_Property('PlatformRestartPeriod')))
+    
+    # Calculate new dates based on periods
+    date2 = anchor_date + period_a
+    date3 = date2 + TimeSpan(days=period_b)
+    
+    # Update document properties with new dates
+    extended_doc.set_Property('PlatformShutdownDate', date2.ToShortDateString())
+    extended_doc.set_Property('PlatformRestartDate', date3.ToShortDateString())
+
+# Assuming 'doc' is the instance of the existing Application.Document
+doc = Application.Document
+extended_doc = ExtendedDocument(doc)
+
+# Attach the property changed event handler
+extended_doc.PropertyChanged += property_changed
+
+# Initialize the anchor date and periods if not set
+if not extended_doc.get_Property('PlatformShutdownDate'):
+    extended_doc.set_Property('PlatformShutdownDate', DateTime.Today.AddDays(-30).ToShortDateString())
+if not extended_doc.get_Property('PlatformShutdownPeriod'):
+    extended_doc.set_Property('PlatformShutdownPeriod', '3')  # Default period days
+if not extended_doc.get_Property('PlatformRestartPeriod'):
+    extended_doc.set_Property('PlatformRestartPeriod', '3')  # Default period days
+
+# Initial calculation of dates
+update_dates(extended_doc)
