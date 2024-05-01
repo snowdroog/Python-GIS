@@ -1,0 +1,74 @@
+from Spotfire.Dxp.Data import DataManager, DataTable
+from System import DateTime, TimeSpan
+from System.Collections.Generic import List, Dictionary
+import clr
+
+clr.AddReference("System.Core")
+clr.ImportExtensions(System.Linq)
+
+# Function to get the Spotfire document's data manager
+def get_data_manager():
+    return Application.Document.Data
+
+# Function to retrieve the AvgTop10 value where RankReal is 1.00
+def get_production_value(data_table):
+    try:
+        cursor = DataValueCursor.CreateFormatted(data_table.Columns["AvgTop10"])
+        row_selection = data_table.Select("RankReal = 1.00")
+        for row in data_table.GetRows(row_selection.AsIndexSet(), cursor):
+            production_value = cursor.CurrentValue
+            return float(production_value) if production_value else None
+    except Exception as e:
+        print(f"Error retrieving production value: {str(e)}")
+        return None
+
+# Function to create or update the forecastProd table
+def create_or_update_table(dataManager, table_name, rows, columns):
+    try:
+        if table_name not in dataManager.Tables:
+            # Table does not exist, create it
+            newTable = dataManager.CreateTableFromRows(table_name, rows, columns)
+        else:
+            # Table exists, update it
+            existingTable = dataManager.Tables[table_name]
+            existingTable.ReplaceData(rows)
+        print(f"Table '{table_name}' updated or created successfully.")
+    except Exception as e:
+        print(f"Failed to create or update table '{table_name}': {str(e)}")
+
+# Main function to execute the process
+def main():
+    dataManager = get_data_manager()
+    production_table = dataManager.Tables["GENSCAPE_PIPEFLOW_REPORTS"]
+    production_value = get_production_value(production_table)
+
+    if production_value is None:
+        print("No valid production value found. Exiting script.")
+        return
+
+    today = DateTime.Now
+    end_of_year = DateTime(today.Year, 12, 31)
+    six_months_later = today.AddMonths(6)
+    end_date = max(six_months_later, end_of_year)
+
+    dates = [today.AddDays(i) for i in range((end_date - today).Days + 1)]
+    regions = production_table.Columns["REGION"].Properties["UniqueValues"].Value
+    rows = List[Dictionary[str, object]]()
+
+    for date in dates:
+        for region in regions:
+            row = Dictionary[str, object]()
+            row["date"] = date
+            row["REGION"] = region
+            row["production"] = production_value
+            rows.Add(row)
+    
+    columns = Dictionary[str, Type]()
+    columns["date"] = clr.GetClrType(DateTime)
+    columns["REGION"] = clr.GetClrType(str)
+    columns["production"] = clr.GetClrType(float)
+
+    create_or_update_table(dataManager, "forecastProd", rows, columns)
+
+# Call the main function to run the script
+main()
