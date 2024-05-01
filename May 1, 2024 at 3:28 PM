@@ -1,0 +1,59 @@
+from Spotfire.Dxp.Data import DataManager, DataTable
+from System import DateTime, TimeSpan
+from System.Collections.Generic import List, Dictionary
+import clr
+
+clr.AddReference("System.Core")
+clr.ImportExtensions(System.Linq)
+
+# Access the Spotfire document's data
+dataManager = Application.Document.Data
+
+# Function to retrieve the AvgTop10 value where RankReal is 1.00
+def get_production_value():
+    table = dataManager.Tables["GENSCAPE_PIPEFLOW_REPORTS"]
+    cursor = DataValueCursor.CreateFormatted(table.Columns["AvgTop10"])
+    row_selection = table.Select("RankReal = 1.00")
+    
+    for row in table.GetRows(row_selection.AsIndexSet(), cursor):
+        production_value = cursor.CurrentValue
+        return float(production_value) if production_value else None
+
+# Calculate the date range
+today = DateTime.Now
+end_of_year = DateTime(today.Year, 12, 31)
+six_months_later = today.AddMonths(6)
+end_date = max(six_months_later, end_of_year)
+
+# Create a date range
+dates = [today.AddDays(i) for i in range((end_date - today).Days + 1)]
+
+# Fetch the production value
+production_value = get_production_value()
+
+# Function to create the forecastProd data
+def create_forecast_prod():
+    rows = List[Dictionary[str, object]]()
+    regions = dataManager.Tables["GENSCAPE_PIPEFLOW_REPORTS"].Columns["REGION"].Properties["UniqueValues"].Value
+
+    for date in dates:
+        for region in regions:
+            row = Dictionary[str, object]()
+            row["date"] = date
+            row["REGION"] = region
+            row["production"] = production_value
+            rows.Add(row)
+    
+    # Creating a new data table from the rows
+    if "forecastProd" not in dataManager.Tables:
+        columns = Dictionary[str, Type]()
+        columns["date"] = clr.GetClrType(DateTime)
+        columns["REGION"] = clr.GetClrType(str)
+        columns["production"] = clr.GetClrType(float)
+        newTable = dataManager.CreateTableFromRows("forecastProd", rows, columns)
+    else:
+        newTable = dataManager.Tables["forecastProd"]
+        newTable.ReplaceData(rows)
+
+# Execute the function to populate the table
+create_forecast_prod()
