@@ -1,0 +1,28 @@
+# Sample Python script for Spotfire Data Function
+import pandas as pd
+from datetime import datetime, timedelta
+
+# Assume 'input_table' is passed as an input parameter containing the GENSCAPE_PIPEFLOW_REPORTS data
+def forecast_production(input_table):
+    # Filter the necessary row
+    filtered_data = input_table[input_table['RankReal'] == 1.00]
+    production_value = filtered_data['AvgTop10'].iloc[0] if not filtered_data.empty else None
+    
+    # Calculate the date range
+    today = datetime.today()
+    end_of_year = datetime(today.year, 12, 31)
+    six_months_later = today + timedelta(days=183)
+    end_date = max(six_months_later, end_of_year)
+
+    # Create date range
+    dates = pd.date_range(start=today, end=end_date)
+    regions = input_table['REGION'].unique()
+
+    # Create forecast dataframe
+    forecast_records = pd.DataFrame([
+        [date, region, production_value] for date in dates for region in regions
+    ], columns=['date', 'REGION', 'production'])
+
+    return forecast_records
+
+# This function can be registered as a data function where 'input_table' is an input parameter and the output is 'forecast_records'
