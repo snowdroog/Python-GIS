@@ -1,0 +1,29 @@
+# Ensure last_prod_date is correctly formatted as a Date
+last_prod_date <- as.Date(max(GENSCAPE_PIPEFLOW_REPORTS$date, na.rm = TRUE), format = "%Y-%m-%d")
+
+# Define the Date Range
+end_date_6mo <- last_prod_date + 183 # Approximately 6 months
+end_date_year <- as.Date(paste(format(last_prod_date, "%Y"), "12-31", sep = "-"))
+end_date <- max(end_date_6mo, end_date_year)
+
+# Safeguard to ensure end_date is within one year from last_prod_date
+if (end_date > last_prod_date + 365) {
+  end_date <- last_prod_date + 365
+}
+
+# Generate the date sequence
+date_seq <- seq(from = last_prod_date, to = end_date, by = "day")
+
+# Filter and Calculate Fixed Production Values for each region where RankReal is 1.00
+avg_production <- tapply(GENSCAPE_PIPEFLOW_REPORTS$AvgTop10[GENSCAPE_PIPEFLOW_REPORTS$RankReal == 1.00],
+                         GENSCAPE_PIPEFLOW_REPORTS$REGION[GENSCAPE_PIPEFLOW_REPORTS$RankReal == 1.00], mean, na.rm = TRUE)
+
+# Generate the Output Table
+prodForecast <- expand.grid(date = date_seq, REGION = names(avg_production))
+prodForecast$production <- avg_production[match(prodForecast$REGION, names(avg_production))]
+
+# Handle regions with no RankReal == 1.00 data
+prodForecast$production[is.na(prodForecast$production)] <- 0 # Assuming 0 as a default production value
+
+# Return the output table 'prodForecast' to Spotfire
+prodForecast
