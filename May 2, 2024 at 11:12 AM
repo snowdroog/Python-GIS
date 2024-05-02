@@ -1,0 +1,39 @@
+# Define the data function with explicit input and output
+spotfireDataFunction <- function(GENSCAPE_PIPEFLOW_REPORTS) {
+  # Check for required columns
+  if (!all(c("date", "AvgTop10", "RankReal", "REGION") %in% names(GENSCAPE_PIPEFLOW_REPORTS))) {
+    stop("Data table does not have the required columns")
+  }
+
+  # Filter data where RankReal is 1.00
+  filteredData <- GENSCAPE_PIPEFLOW_REPORTS[GENSCAPE_PIPEFLOW_REPORTS$RankReal == 1.00, ]
+
+  # Find the maximum date in the unfiltered data
+  maxDate <- max(GENSCAPE_PIPEFLOW_REPORTS$date)
+
+  # Calculate the end of the current year and six months from the max date
+  endOfYear <- as.Date(paste(format(maxDate, "%Y"), "-12-31", sep=""))
+  sixMonthsLater <- as.Date(maxDate) + 180  # Approximation of six months
+  finalDate <- max(endOfYear, sixMonthsLater)
+
+  # Generate the future dates and replicate production values for each region
+  results <- list()
+  for(region in unique(filteredData$REGION)) {
+    avgTop10 <- filteredData$AvgTop10[filteredData$REGION == region][1]  # Take the first AvgTop10 value for simplicity
+    dateSeq <- seq(from = maxDate + 1, to = finalDate, by = "day")
+    regionData <- data.frame(
+      date = dateSeq,
+      production = rep(avgTop10, length(dateSeq)),
+      REGION = rep(region, length(dateSeq))
+    )
+    results[[region]] <- regionData
+  }
+
+  # Combine all regions' data into one dataframe
+  prodForecast <- do.call(rbind, results)
+
+  # Return the prodForecast dataframe
+  return(list(prodForecast = prodForecast))
+}
+
+# Make sure to map the GENSCAPE_PIPEFLOW_REPORTS data table to the dataTable input in Spotfire.
