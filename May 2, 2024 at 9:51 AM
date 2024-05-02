@@ -1,0 +1,31 @@
+# Ensure the data table is correctly loaded and contains the 'date' column
+if ("date" %in% colnames(GENSCAPE_PIPEFLOW_REPORTS)) {
+  # Find the maximum date, handling possible NA values gracefully
+  max_date <- max(as.Date(GENSCAPE_PIPEFLOW_REPORTS$date, format = "%Y-%m-%d"), na.rm = TRUE)
+  
+  if (!is.na(max_date)) {
+    last_prod_date <- max_date
+  } else {
+    # Handle the case where no valid date was found
+    print("No valid dates available in the data table.")
+    last_prod_date <- as.Date("some_default_date") # You need to define what default date to use
+  }
+} else {
+  print("Date column not found in the data table.")
+  last_prod_date <- as.Date("some_default_date") # Default date if column is missing
+}
+
+# Continue with calculations if last_prod_date is defined
+if (exists("last_prod_date")) {
+  # Define the Date Range
+  end_date_6mo <- last_prod_date + 183 # Approximately 6 months
+  end_date_year <- as.Date(paste(format(last_prod_date, "%Y"), "12-31", sep = "-"))
+  end_date <- max(end_date_6mo, end_date_year)
+  
+  # Generate the date sequence
+  date_seq <- seq(from = last_prod_date, to = end_date, by = "day")
+
+  # Further processing...
+} else {
+  print("Last production date is not defined.")
+}
