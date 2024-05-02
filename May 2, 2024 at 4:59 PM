@@ -1,0 +1,17 @@
+# Assuming the GENSCAPE_PIPEFLOW_REPORTS is loaded and includes 'REGION', 'AvgTop10', 'RankReal'
+
+# Filter data where RankReal is 1.00
+relevant_data <- GENSCAPE_PIPEFLOW_REPORTS[GENSCAPE_PIPEFLOW_REPORTS$RankReal == 1.00, ]
+
+# Keep only the unique entries for each REGION
+unique_data <- relevant_data[!duplicated(relevant_data$REGION), c("REGION", "AvgTop10")]
+
+# Generate a sequence of dates for a year from today
+dates <- seq(from = Sys.Date(), by = "day", length.out = 365)
+
+# Create the output dataframe, initializing columns
+df <- data.frame(Date = rep(dates, times = nrow(unique_data)),
+                 REGION = rep(unique_data$REGION, each = length(dates)),
+                 Production = rep(unique_data$AvgTop10, each = length(dates)))
+
+# The data frame 'df' is now ready to be used within Spotfire as a DataFunction output
