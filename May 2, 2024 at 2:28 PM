@@ -1,0 +1,30 @@
+# Define the Spotfire data function
+spotfireDataFunction <- function(GENSCAPE_PIPEFLOW_REPORTS) {
+  # Extract the input data
+  input_data <- GENSCAPE_PIPEFLOW_REPORTS
+  
+  # Filter the data where RankReal is exactly 1.00
+  filtered_data <- input_data[input_data$RankReal == 1.00, ]
+  
+  # Create a new table for the forecast
+  prodForecast <- data.frame(
+    REGION = filtered_data$REGION,
+    date = as.Date(filtered_data$date) + 365,  # Extend the date by one year
+    production = filtered_data$AvgTop10
+  )
+  
+  # Return the output table
+  return(prodForecast)
+}
+
+# Example input table (to be removed when implementing in Spotfire as it will use actual data)
+# Assume the function will be called with actual data within Spotfire environment
+GENSCAPE_PIPEFLOW_REPORTS <- data.frame(
+  date = as.Date(c("2023-05-01", "2023-05-02")),
+  REGION = c("North", "South"),
+  AvgTop10 = c(100.5, 95.3),
+  RankReal = c(1.00, 0.95)
+)
+
+# Call the function (for demonstration; remove or comment out in actual Spotfire deployment)
+spotfireDataFunction(GENSCAPE_PIPEFLOW_REPORTS)
