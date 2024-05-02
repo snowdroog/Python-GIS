@@ -1,0 +1,44 @@
+# Define the data function
+spotfireDataFunction <- function(dataTable) {
+  # Filter the rows where RankReal is 1.00
+  filteredData <- dataTable[dataTable$RankReal == 1.00, ]
+
+  # Find the maximum date in the filtered data
+  maxDate <- max(filteredData$date)
+
+  # Calculate the end of the current year and six months from the max date
+  endOfYear <- as.Date(paste(format(maxDate, "%Y"), "-12-31", sep=""))
+  sixMonthsLater <- as.Date(maxDate) + 180  # Approximation of six months
+
+  # Determine which date is greater
+  finalDate <- max(endOfYear, sixMonthsLater)
+
+  # Create a list to store the results
+  results <- list()
+
+  # For each unique region in the filtered data
+  for(region in unique(filteredData$REGION)) {
+    # Get the average of AvgTop10 for this region
+    avgTop10 <- mean(filteredData$AvgTop10[filteredData$REGION == region])
+
+    # Generate sequence of dates from the day after max date to the final date
+    dateSeq <- seq(from = maxDate + 1, to = finalDate, by = "day")
+
+    # Combine the data for this region
+    regionData <- data.frame(
+      date = dateSeq,
+      production = rep(avgTop10, length(dateSeq)),
+      REGION = rep(region, length(dateSeq))
+    )
+
+    # Append to the results list
+    results[[region]] <- regionData
+  }
+
+  # Combine all regions' data into one dataframe
+  prodForecast <- do.call(rbind, results)
+
+  return(list(prodForecast = prodForecast))
+}
+
+# Make sure when setting up the data function in Spotfire to map the output list element 'prodForecast' to your output table.
