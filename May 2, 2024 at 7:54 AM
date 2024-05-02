@@ -1,0 +1,31 @@
+# Assume GENSCAPE_PIPEFLOW_REPORTS is an input parameter to the data function in Spotfire
+
+# Step 1: Extract the Maximum Date
+last_prod_date <- max(as.Date(GENSCAPE_PIPEFLOW_REPORTS$date, format = "%Y-%m-%d"), na.rm = TRUE)
+
+# Step 2: Define the Date Range
+end_date_6mo <- as.Date(last_prod_date) + 183 # Approximately 6 months
+end_date_year <- as.Date(paste(format(last_prod_date, "%Y"), "12-31", sep = "-"))
+
+# Choose the later of the two dates
+end_date <- max(end_date_6mo, end_date_year)
+
+# Create a sequence of dates from the last production date to the end date
+date_seq <- seq(from = last_prod_date, to = end_date, by = "day")
+
+# Step 3: Filter and Calculate Production Values
+prod_rows <- GENSCAPE_PIPEFLOW_REPORTS[GENSCAPE_PIPEFLOW_REPORTS$RankReal == 1.00,]
+avg_production <- mean(as.numeric(prod_rows$AvgTop10), na.rm = TRUE)
+
+# Step 4: Extract Unique Regions
+regions <- unique(GENSCAPE_PIPEFLOW_REPORTS$REGION)
+
+# Step 5: Generate the Output Table
+dates <- rep(date_seq, each = length(regions))
+productions <- rep(avg_production, times = length(date_seq) * length(regions))
+regions_rep <- rep(regions, each = length(date_seq))
+
+prodForecast <- data.frame(date = dates, production = productions, REGION = regions_rep)
+
+# This output table 'prodForecast' can be returned to Spotfire directly
+prodForecast
