@@ -1,0 +1,25 @@
+# Define a function that will be called by Spotfire to generate the forecast data
+generateForecastData <- function(data) {
+  # Extracting unique regions and the last AvgTop10 where RankReal = 1.00
+  unique_regions <- unique(data[data$RankReal == 1.00, "REGION"])
+  latest_production <- sapply(unique_regions, function(region) {
+    last(data[data$REGION == region & data$RankReal == 1.00, "AvgTop10"])
+  }, USE.NAMES = TRUE)
+  
+  # Dates generation for one year
+  start_date <- Sys.Date()
+  end_date <- start_date + 364  # Extend one year
+  date_sequence <- seq.Date(start_date, end_date, by = "day")
+  
+  # Prepare the forecast data frame
+  forecast_data <- expand.grid(REGION = unique_regions, date = date_sequence)
+  forecast_data$production <- rep(latest_production, each = length(date_sequence))
+  
+  # Returning the data frame to be used in Spotfire as a new table
+  return(forecast_data)
+}
+
+# Example usage:
+# Assuming `data` is your dataframe loaded with the GENSCAPE_PIPEFLOW_REPORTS content
+# forecast_table <- generateForecastData(data)
+# The `forecast_table` can then be returned to Spotfire for visualization or further analysis
