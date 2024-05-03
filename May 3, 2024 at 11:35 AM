@@ -1,0 +1,25 @@
+# Filter only the necessary rows and columns at the beginning to reduce memory usage
+necessary_data <- GENSCAPE_PIPEFLOW_REPORTS[GENSCAPE_PIPEFLOW_REPORTS$RankReal == 1.00, c("Region", "AvgTop10", "Date")]
+
+# Create a sequence of dates for the next 12 months from the most recent date in the data
+start_date <- max(necessary_data$Date, na.rm = TRUE)  # Most recent date from the filtered data
+end_date <- start_date + 365  # One year later
+date_sequence <- seq.Date(from = start_date, to = end_date, by = "day")
+
+# Create a data frame with all combinations of Date and Region
+prodForecast <- expand.grid(Date = date_sequence, Region = unique(necessary_data$Region))
+
+# Calculate the number of dates to ensure correct replication of AvgTop10 values
+num_dates <- length(date_sequence)
+
+# Map AvgTop10 to each region correctly across all dates
+# Join necessary_data to get AvgTop10 for each region, then repeat each AvgTop10 by the number of dates
+prodForecast <- merge(prodForecast, necessary_data[c("Region", "AvgTop10")], by = "Region")
+prodForecast$Production <- rep(prodForecast$AvgTop10, each = num_dates)
+
+# Ensure that the number of Production values matches the number of rows in prodForecast
+if (nrow(prodForecast) != length(prodForecast$Production)) {
+  stop("Mismatch in the number of production values and rows.")
+}
+
+# The output object 'prodForecast' is ready to be used by Spotfire
