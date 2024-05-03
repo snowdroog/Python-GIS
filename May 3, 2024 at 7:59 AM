@@ -1,0 +1,42 @@
+# Check if GENSCAPE_PIPEFLOW_REPORTS exists and has the expected columns
+if (!exists("GENSCAPE_PIPEFLOW_REPORTS")) {
+  stop("GENSCAPE_PIPEFLOW_REPORTS data frame does not exist. Please load the data frame before running this script.")
+}
+
+required_columns <- c("REGION", "AvgTop10", "RankReal")
+if (!all(required_columns %in% names(GENSCAPE_PIPEFLOW_REPORTS))) {
+  stop("One or more required columns are missing in GENSCAPE_PIPEFLOW_REPORTS. Required columns are: REGION, AvgTop10, RankReal.")
+}
+
+# Check if there is any data in the data frame
+if (nrow(GENSCAPE_PIPEFLOW_REPORTS) == 0) {
+  stop("The GENSCAPE_PIPEFLOW_REPORTS data frame is empty. No data available for processing.")
+}
+
+# Filter data where RankReal is 1.00
+relevant_data <- GENSCAPE_PIPEFLOW_REPORTS[GENSCAPE_PIPEFLOW_REPORTS$RankReal == 1.00, ]
+
+# Check if relevant_data has any rows after filtering
+if (nrow(relevant_data) == 0) {
+  stop("No relevant data found where RankReal is 1.00. Check the values in the 'RankReal' column.")
+}
+
+# Keep only the unique entries for each REGION
+unique_data <- relevant_data[!duplicated(relevant_data$REGION), c("REGION", "AvgTop10")]
+
+# Generate a sequence of dates for a year from today
+dates <- seq(from = Sys.Date(), by = "day", length.out = 365)
+
+# Create the output dataframe
+if (nrow(unique_data) > 0) {
+  df <- data.frame(
+    Date = rep(dates, times = nrow(unique_data)),
+    REGION = rep(unique_data$REGION, each = length(dates)),
+    Production = rep(unique_data$AvgTop10, each = length(dates))
+  )
+} else {
+  df <- data.frame(Date = dates, REGION = character(0), Production = numeric(0))
+  warning("No unique regions found in the relevant data.")
+}
+
+# 'df' is now correctly structured and should be free of 'length zero' errors
