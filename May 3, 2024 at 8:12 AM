@@ -1,0 +1,10 @@
+# Replace 'inputTableName' with the actual name of your input parameter that holds the table
+if (!exists("inputTableName")) {
+  stop("Input table not found. Check the data function configuration.")
+}
+
+# Assuming the input table exists, load it into a DataFrame
+df <- inputTableName
+
+# Optionally, print or summarize the DataFrame to check its contents
+print(head(df))
