@@ -1,0 +1,20 @@
+# Spotfire automatically handles data loading for data functions.
+# Assume GENSCAPE_PIPEFLOW_REPORTS is available and correctly loaded as per Spotfire's data function settings.
+
+# Filter records where RankReal is 1.00
+filtered_data <- GENSCAPE_PIPEFLOW_REPORTS[GENSCAPE_PIPEFLOW_REPORTS$RankReal == 1.00, ]
+
+# Create a sequence of dates for the next 12 months from the most recent date in the data
+start_date <- max(filtered_data$Date, na.rm = TRUE) # Use the most recent date from the data
+end_date <- start_date + 365 # One year later
+date_sequence <- seq.Date(from = start_date, to = end_date, by = "day")
+
+# Expand data to create a row for each date for each region
+prodForecast <- expand.grid(Date = date_sequence, Region = unique(filtered_data$Region))
+prodForecast <- merge(prodForecast, filtered_data[, c("Region", "AvgTop10")], by = "Region", all.x = TRUE)
+
+# Rename AvgTop10 to Production and finalize the prodForecast table
+prodForecast$Production <- prodForecast$AvgTop10
+prodForecast$AvgTop10 <- NULL
+
+# The output object 'prodForecast' will be automatically recognized by Spotfire if configured as output in the data function settings.
