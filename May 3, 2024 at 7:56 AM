@@ -1,0 +1,29 @@
+# Assuming the GENSCAPE_PIPEFLOW_REPORTS is loaded and includes 'REGION', 'AvgTop10', 'RankReal'
+
+# Filter data where RankReal is 1.00
+relevant_data <- GENSCAPE_PIPEFLOW_REPORTS[GENSCAPE_PIPEFLOW_REPORTS$RankReal == 1.00, ]
+
+# Keep only the unique entries for each REGION
+unique_data <- relevant_data[!duplicated(relevant_data$REGION), c("REGION", "AvgTop10")]
+
+# Check if unique_data has no rows, handle the situation
+if (nrow(unique_data) == 0) {
+  stop("No data available for processing. Please check the input dataset 'GENSCAPE_PIPEFLOW_REPORTS'.")
+}
+
+# Generate a sequence of dates for a year from today
+dates <- seq(from = Sys.Date(), by = "day", length.out = 365)
+
+# Create the output dataframe, ensuring we don't have invalid 'times'
+if (nrow(unique_data) > 0) {
+  df <- data.frame(
+    Date = rep(dates, times = nrow(unique_data)),
+    REGION = rep(unique_data$REGION, each = length(dates)),
+    Production = rep(unique_data$AvgTop10, each = length(dates))
+  )
+} else {
+  df <- data.frame(Date = dates, REGION = character(0), Production = numeric(0))
+  warning("No valid regions found in the input data.")
+}
+
+# The data frame 'df' is now structured to avoid any 'invalid times' error
