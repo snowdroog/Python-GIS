@@ -1,0 +1,26 @@
+# Revised replication of AvgTop10 values for each region across all dates, using correct indexing
+
+# Use the current system date as the start date
+start_date <- Sys.Date()
+end_date <- start_date + 365  # One year later
+date_sequence <- seq.Date(from = start_date, to = end_date, by = "day")
+
+# Create a data frame with all combinations of Date and REGION
+df2 <- expand.grid(Date = date_sequence, REGION = unique(necessary_data$REGION))
+
+# Merge necessary_data to get AvgTop10 for each REGION
+df2 <- merge(df2, necessary_data[c("REGION", "AvgTop10")], by = "REGION", all.x = TRUE)
+
+# Calculate the number of dates for each region to correctly replicate AvgTop10 values
+# This counts the number of entries per REGION in the expanded grid (df2), ensuring alignment for replication
+rep_counts <- ave(df2$REGION, df2$REGION, FUN = length)
+
+# Replicate AvgTop10 across all dates for each REGION
+df2$Production <- rep(df2$AvgTop10, times = rep_counts)
+
+# Ensure that the number of Production values matches the number of rows in df2
+if (nrow(df2) != length(df2$Production)) {
+  stop("Mismatch in the number of production values and rows.")
+}
+
+# The output object 'df2' is ready to be used by Spotfire
