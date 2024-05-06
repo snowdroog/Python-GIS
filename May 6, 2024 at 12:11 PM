@@ -1,0 +1,43 @@
+# Load data - Assuming data is loaded into 'prodForecast'
+prodForecast <- read.csv("prodForecast.csv")  # Assuming CSV format for simplicity
+
+# Document properties (replace these with actual dates)
+PlatformShutdownDate <- as.Date("2023-05-01")
+PlatformShutdownPeriod <- 5  # in days
+PlatformOfflineDate <- as.Date("2023-05-06")
+PlatformOfflinePeriod <- 10  # in days
+PlatformRestartDate <- as.Date("2023-05-16")
+PlatformRestartPeriod <- 5  # in days
+PlatformBackOnlineDate <- as.Date("2023-05-21")
+
+# Creating a sequence of dates for adjustments
+shutdown_dates <- seq(from = PlatformShutdownDate, by = "day", length.out = PlatformShutdownPeriod)
+offline_dates <- seq(from = PlatformOfflineDate, by = "day", length.out = PlatformOfflinePeriod)
+restart_dates <- seq(from = PlatformRestartDate, by = "day", length.out = PlatformRestartPeriod)
+
+# Cloning the rows for the affected dates
+affected_dates <- c(shutdown_dates, offline_dates, restart_dates)
+ScenarioForecast <- prodForecast[prodForecast$Date_Prod %in% affected_dates, ]
+
+# Setting production to zero during the offline period
+ScenarioForecast[ScenarioForecast$Date_Prod %in% offline_dates, "Production"] <- 0
+
+# Adjusting production during shutdown and restart
+# Calculate production decrement and increment
+initial_production <- prodForecast[prodForecast$Date_Prod == min(shutdown_dates), "Production"]
+decrement_step <- initial_production / PlatformShutdownPeriod
+increment_step <- initial_production / PlatformRestartPeriod
+
+# Apply decrement and increment
+for (i in 1:PlatformShutdownPeriod) {
+  ScenarioForecast[ScenarioForecast$Date_Prod == shutdown_dates[i], "Production"] <- initial_production - (decrement_step * i)
+}
+for (i in 1:PlatformRestartPeriod) {
+  ScenarioForecast[ScenarioForecast$Date_Prod == restart_dates[i], "Production"] <- (increment_step * i)
+}
+
+# Print the final table
+print(ScenarioForecast)
+
+# Optionally, save the new ScenarioForecast table
+write.csv(ScenarioForecast, "ScenarioForecast.csv", row.names = FALSE)
