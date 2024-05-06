@@ -1,0 +1,19 @@
+# Load the Spotfire data into an R dataframe (assuming it is already loaded as spotfire_df)
+spotfire_df <- GENSCAPE_PIPEFLOW_REPORTS  # Placeholder for actual Spotfire dataframe loading method
+
+# Filter for unique regions with RankReal = 1.00
+unique_regions <- unique(spotfire_df[spotfire_df$RankReal == 1.00, c("REGION", "AvgTop10")])
+
+# Create a sequence of dates from today for the next 365 days
+dates <- seq.Date(Sys.Date(), length.out = 365, by = "day")
+
+# Create an empty data frame for the production forecast
+prodForecast <- data.frame(Date = rep(dates, each = nrow(unique_regions)),
+                           REGION = rep(unique_regions$REGION, times = length(dates)),
+                           Production = rep(unique_regions$AvgTop10, times = length(dates)))
+
+# Rename the columns appropriately
+names(prodForecast) <- c("Date", "REGION", "Production")
+
+# Display the first few rows of the prodForecast table to verify
+head(prodForecast)
