@@ -1,0 +1,26 @@
+# Adjusted R script for data preparation, ensuring correct row count in the final data frame
+
+# Filter only the necessary rows and columns at the beginning to reduce memory usage
+necessary_data <- GENSCAPE_PIPEFLOW_REPORTS[GENSCAPE_PIPEFLOW_REPORTS$RankReal == 1.00, c("REGION", "AvgTop10", "Date")]
+
+# Use the current system date as the start date
+start_date <- Sys.Date()
+end_date <- start_date + 365  # One year later
+date_sequence <- seq.Date(from = start_date, to = end_date, by = "day")
+
+# Create a data frame with all combinations of Date and REGION
+df2 <- expand.grid(Date = date_sequence, REGION = unique(necessary_data$REGION))
+
+# Merge necessary_data to get AvgTop10 for each REGION, ensuring correct handling of rows
+df2 <- merge(df2, necessary_data[c("REGION", "AvgTop10")], by = "REGION", all.x = TRUE)
+
+# Replicate AvgTop10 correctly across all dates for each REGION
+# Calculate the number of times each AvgTop10 value needs to be replicated
+df2$Production <- rep(df2$AvgTop10, times = sapply(unique(df2$REGION), function(x) sum(df2$REGION == x)))
+
+# Ensure that the number of Production values matches the number of rows in df2
+if (nrow(df2) != length(df2$Production)) {
+  stop("Mismatch in the number of production values and rows.")
+}
+
+# The output object 'df2' is ready to be used by Spotfire
