@@ -1,0 +1,44 @@
+import datetime
+import pandas as pd
+from spotfire.sbdf import load_table, save_table
+
+def adjust_production(data, shutdown_date, shutdown_period, offline_date, offline_period, restart_date, restart_period):
+    # Convert string dates to datetime
+    shutdown_date = pd.to_datetime(shutdown_date)
+    offline_date = pd.to_datetime(offline_date)
+    restart_date = pd.to_datetime(restart_date)
+    
+    # Calculate end dates
+    shutdown_end_date = shutdown_date + datetime.timedelta(days=int(shutdown_period))
+    offline_end_date = offline_date + datetime.timedelta(days=int(offline_period))
+    restart_end_date = restart_date + datetime.timedelta(days=int(restart_period))
+    
+    # Filter rows and clone to a new DataFrame
+    mask = (data['Date_Prod'] >= shutdown_date) & (data['Date_Prod'] <= restart_end_date)
+    scenario_forecast = data.loc[mask].copy()
+    
+    # Adjust Production values
+    scenario_forecast['Adjusted_Production'] = scenario_forecast.apply(
+        lambda row: calculate_production(row, shutdown_date, shutdown_end_date, offline_date, offline_end_date, restart_date, restart_end_date), axis=1)
+
+    return scenario_forecast
+
+def calculate_production(row, shutdown_start, shutdown_end, offline_start, offline_end, restart_start, restart_end):
+    date = row['Date_Prod']
+    production = row['Production']
+    
+    if shutdown_start <= date < shutdown_end:
+        # Linearly decrease production to zero
+        progress = (date - shutdown_start).days / (shutdown_end - shutdown_start).days
+        return production * (1 - progress)
+    elif offline_start <= date < offline_end:
+        # Production is zero
+        return 0
+    elif restart_start <= date < restart_end:
+        # Linearly increase production from zero
+        progress = (date - restart_start).days / (restart_end - restart_start).days
+        return production * progress
+    return production  # Default case, outside specified periods
+
+# Usage example, assuming the function is called from within Spotfire as a Data Function
+# Inputs to the function will be the data table and document properties set in the Spotfire analysis.
