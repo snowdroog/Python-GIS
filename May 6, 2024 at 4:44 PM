@@ -1,0 +1,51 @@
+from datetime import datetime, timedelta
+import pandas as pd
+
+# This function will be called from Spotfire, assuming the context and data are correctly set up
+def adjust_production(context):
+    # Access the data table from the script context
+    prod_forecast = context.getDataTable('prodForecast')
+
+    # Convert Spotfire data table to pandas DataFrame
+    prod_forecast_df = prod_forecast.toPandas()
+
+    # Document properties
+    shutdown_date = datetime.strptime(context.getProperty('PlatformShutdownDate'), '%Y-%m-%d')
+    shutdown_period = int(context.getProperty('PlatformShutdownPeriod'))
+    offline_date = datetime.strptime(context.getProperty('PlatformOfflineDate'), '%Y-%m-%d')
+    offline_period = int(context.getProperty('PlatformOfflinePeriod'))
+    restart_date = datetime.strptime(context.getProperty('PlatformRestartDate'), '%Y-%m-%d')
+    restart_period = int(context.getProperty('PlatformRestartPeriod'))
+
+    # Calculating the end dates
+    shutdown_end_date = shutdown_date + timedelta(days=shutdown_period)
+    offline_end_date = offline_date + timedelta(days=offline_period)
+    restart_end_date = restart_date + timedelta(days=restart_period)
+
+    # Filter rows within the relevant date range
+    scenario_forecast_df = prod_forecast_df[(prod_forecast_df['Date_Prod'] >= shutdown_date) & (prod_forecast_df['Date_Prod'] <= restart_end_date)].copy()
+
+    # Adjust production values
+    scenario_forecast_df['Adjusted_Production'] = scenario_forecast_df['Date_Prod'].apply(
+        lambda x: calculate_production(x, shutdown_date, shutdown_end_date, offline_date, offline_end_date, restart_date, restart_end_date, scenario_forecast_df.loc[x.index, 'Production'])
+    )
+
+    # Create a new data table in the Spotfire analysis from the DataFrame
+    from Spotfire.Dxp.Data import DataType, DataColumn, DataTable
+    from System import Array
+    # It assumes the Spotfire environment already has the DataTable class and other necessary classes correctly imported and accessible.
+
+    # Assuming 'ScenarioForecast' is meant to be an output table created within the script
+    if 'ScenarioForecast' in context.getDataTableNames():
+        context.replaceDataTable('ScenarioForecast', scenario_forecast_df)
+    else:
+        context.createDataTable('ScenarioForecast', scenario_forecast_df)
+
+def calculate_production(date, shut_start, shut_end, off_start, off_end, rest_start, rest_end, production):
+    if shut_start <= date < shut_end:
+        return production * (1 - ((date - shut_start).days / float((shut_end - shut_start).days)))
+    elif off_start <= date < off_end:
+        return 0  # Production is zero during the offline period
+    elif rest_start <= date < rest_end:
+        return production * ((date - rest_start).days / float((rest_end - rest_start).days))
+    return production  # Normal production outside specific periods
