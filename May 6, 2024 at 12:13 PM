@@ -1,0 +1,28 @@
+# Load data - Assuming data is loaded into 'prodForecast'
+prodForecast <- read.csv("prodForecast.csv")  # Assuming CSV format for simplicity
+
+# Cloning the rows for the affected dates
+ScenarioForecast <- prodForecast[prodForecast$Date_Prod >= PlatformShutdownDate & prodForecast$Date_Prod <= PlatformRestartDate, ]
+
+# Set production to zero during the offline period
+ScenarioForecast[ScenarioForecast$Date_Prod >= PlatformOfflineDate & ScenarioForecast$Date_Prod < PlatformBackOnlineDate, "Production"] <- 0
+
+# Adjust production during shutdown period
+shutdown_days <- seq(from = PlatformShutdownDate, by = "day", length.out = PlatformShutdownPeriod)
+incremental_decrease <- (prodForecast[prodForecast$Date_Prod == PlatformShutdownDate, "Production"] / PlatformShutdownPeriod)
+for (i in 1:PlatformShutdownPeriod) {
+  ScenarioForecast[ScenarioForecast$Date_Prod == shutdown_days[i], "Production"] <- max(0, prodForecast[prodForecast$Date_Prod == shutdown_days[i], "Production"] - (incremental_decrease * i))
+}
+
+# Adjust production during restart period
+restart_days <- seq(from = PlatformRestartDate, by = "day", length.out = PlatformRestartPeriod)
+incremental_increase <- (prodForecast[prodForecast$Date_Prod == PlatformRestartDate, "Production"] / PlatformRestartPeriod)
+for (i in 1:PlatformRestartPeriod) {
+  ScenarioForecast[ScenarioForecast$Date_Prod == restart_days[i], "Production"] <- min(prodForecast[prodForecast$Date_Prod == restart_days[i], "Production"], (incremental_increase * i))
+}
+
+# Print the final table
+print(ScenarioForecast)
+
+# Optionally, save the new ScenarioForecast table
+write.csv(ScenarioForecast, "ScenarioForecast.csv", row.names = FALSE)
