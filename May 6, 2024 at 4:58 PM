@@ -1,0 +1,23 @@
+# Define the function with parameters corresponding to document properties
+spotfireFunction <- function(PlatformShutdownDate, PlatformShutdownPeriod, PlatformOfflineDate, PlatformOfflinePeriod, PlatformRestartDate, PlatformRestartPeriod, PlatformBackOnlineDate, prodForecast) {
+  
+  # Convert string parameters to Date objects
+  PlatformShutdownDate <- as.Date(PlatformShutdownDate)
+  PlatformOfflineDate <- as.Date(PlatformOfflineDate)
+  PlatformRestartDate <- as.Date(PlatformRestartDate)
+  PlatformBackOnlineDate <- as.Date(PlatformBackOnlineDate)
+  
+  # Clone the rows for the required scenario
+  ScenarioForecast <- prodForecast[prodForecast$Date_Prod >= PlatformShutdownDate & prodForecast$Date_Prod <= PlatformRestartDate,]
+  
+  # Modify Production values according to the shutdown and restart periods
+  ScenarioForecast$Production <- ifelse(ScenarioForecast$Date_Prod <= PlatformOfflineDate, 0,
+                                         ifelse(ScenarioForecast$Date_Prod <= PlatformRestartDate,
+                                                (as.numeric(ScenarioForecast$Date_Prod - PlatformOfflineDate) / as.numeric(PlatformRestartDate - PlatformOfflineDate)) * max(prodForecast$Production[prodForecast$Date_Prod == PlatformOfflineDate]),
+                                                prodForecast$Production))
+  
+  # Return the modified dataframe
+  return(ScenarioForecast)
+}
+
+# This function now can be called within Spotfire with the required parameters
