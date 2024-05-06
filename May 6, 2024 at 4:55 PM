@@ -1,0 +1,22 @@
+# Assuming the dataframe 'prodForecast' and document properties are already loaded into the R environment.
+
+# Convert document properties to Date class
+PlatformShutdownDate <- as.Date("your_date_here")  # Replace with actual date
+PlatformShutdownPeriod <- as.integer("your_period_here")  # Replace with actual period
+PlatformOfflineDate <- as.Date("your_date_here")  # Replace with actual date
+PlatformOfflinePeriod <- as.integer("your_period_here")  # Replace with actual period
+PlatformRestartDate <- as.Date("your_date_here")  # Replace with actual date
+PlatformRestartPeriod <- as.integer("your_period_here")  # Replace with actual period
+PlatformBackOnlineDate <- as.Date("your_date_here")  # Replace with actual date
+
+# Filter the rows for the required scenario
+ScenarioForecast <- prodForecast[prodForecast$Date_Prod >= PlatformShutdownDate & prodForecast$Date_Prod <= PlatformRestartDate,]
+
+# Modify Production values according to the shutdown and restart periods
+ScenarioForecast$Production <- ifelse(ScenarioForecast$Date_Prod <= PlatformOfflineDate, 0,
+                                       ifelse(ScenarioForecast$Date_Prod <= PlatformRestartDate,
+                                              (as.numeric(ScenarioForecast$Date_Prod - PlatformOfflineDate) / as.numeric(PlatformRestartDate - PlatformOfflineDate)) * prodForecast$Production[prodForecast$Date_Prod == PlatformOfflineDate],
+                                              prodForecast$Production))
+
+# Print the new table
+print(ScenarioForecast)
