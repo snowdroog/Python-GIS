@@ -1,0 +1,35 @@
+import pandas as pd
+import datetime
+
+def sf_adjust_production(data, shutdown_date, shutdown_period, offline_date, offline_period, restart_date, restart_period):
+    shutdown_date = pd.to_datetime(shutdown_date)
+    shutdown_period = int(shutdown_period)
+    offline_date = pd.to_datetime(offline_date)
+    offline_period = int(offline_period)
+    restart_date = pd.to_datetime(restart_date)
+    restart_period = int(restart_period)
+
+    # Calculate end dates
+    shutdown_end = shutdown_date + datetime.timedelta(days=shutdown_period)
+    offline_end = offline_date + datetime.timedelta(days=offline_period)
+    restart_end = restart_date + datetime.timedelta(days=restart_period)
+
+    # Filter and clone data
+    mask = (data['Date_Prod'] >= shutdown_date) & (data['Date_Prod'] <= restart_end)
+    scenario_forecast = data.loc[mask].copy()
+
+    # Adjust Production
+    scenario_forecast['Adjusted_Production'] = scenario_forecast['Date_Prod'].apply(
+        lambda x: calculate_production(x, data.at[x.name, 'Production'], shutdown_date, shutdown_end, offline_date, offline_end, restart_date, restart_end))
+
+    # Assuming 'context' is the object used to interface with Spotfire's Python runtime
+    return scenario_forecast
+
+def calculate_production(date, production, shut_start, shut_end, off_start, off_end, rest_start, rest_end):
+    if shut_start <= date < shut_end:
+        return production * (1 - ((date - shut_start).days / (shut_end - shut_start).days))
+    elif off_start <= date < off_end:
+        return 0
+    elif rest_start <= date < rest_end:
+        return production * ((date - rest_start).days / (rest_end - rest_start).days)
+    return production
