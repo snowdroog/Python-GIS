@@ -1,0 +1,40 @@
+# Function to adjust production based on the specified platform operation dates
+def adjust_production(context):
+    # Import the required Python library for handling data
+    import pandas as pd
+    import datetime
+
+    # Accessing data from the input table passed as a parameter
+    data = context.getInputTable("prodForecast")
+    # Document properties are also accessed via parameters
+    shutdown_date = pd.to_datetime(context.getProperty("PlatformShutdownDate"))
+    shutdown_period = int(context.getProperty("PlatformShutdownPeriod"))
+    offline_date = pd.to_datetime(context.getProperty("PlatformOfflineDate"))
+    offline_period = int(context.getProperty("PlatformOfflinePeriod"))
+    restart_date = pd.to_datetime(context.getProperty("PlatformRestartDate"))
+    restart_period = int(context.getProperty("PlatformRestartPeriod"))
+    
+    # Calculate end dates based on the start dates and periods
+    shutdown_end_date = shutdown_date + datetime.timedelta(days=shutdown_period)
+    offline_end_date = offline_date + datetime.timedelta(days=offline_period)
+    restart_end_date = restart_date + datetime.timedelta(days=restart_period)
+    
+    # Filtering and cloning data
+    mask = (data['Date_Prod'] >= shutdown_date) & (data['Date_Prod'] <= restart_end_date)
+    scenario_forecast = data[mask].copy()
+    
+    # Adjusting the production values
+    scenario_forecast['Adjusted_Production'] = scenario_forecast['Date_Prod'].apply(
+        lambda date: calculate_production(date, data['Production'], shutdown_date, shutdown_end_date, offline_date, offline_end_date, restart_date, restart_end_date))
+
+    # Outputting the adjusted data table back to Spotfire
+    context.setOutputTable("ScenarioForecast", scenario_forecast)
+
+def calculate_production(date, production, shutdown_start, shutdown_end, offline_start, offline_end, restart_start, restart_end):
+    if shutdown_start <= date < shutdown_end:
+        return production * (1 - ((date - shutdown_start).days / float((shutdown_end - shutdown_start).days)))
+    elif offline_start <= date < offline_end:
+        return 0
+    elif restart_start <= date < restart_end:
+        return production * ((date - restart_start).days / float((restart_end - restart_start).days))
+    return production
