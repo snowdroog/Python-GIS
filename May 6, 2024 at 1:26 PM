@@ -1,0 +1,40 @@
+from Spotfire.Dxp.Data import DataManager, DataTableSaveSettings
+from System import TimeSpan
+
+# Access the data table and document properties
+dataManager = Document.Data
+prodForecast = dataManager.Tables["prodForecast"]
+shutdown_date = Document.Properties["PlatformShutdownDate"]
+shutdown_period = TimeSpan(int(Document.Properties["PlatformShutdownPeriod"]))
+offline_date = Document.Properties["PlatformOfflineDate"]
+offline_period = TimeSpan(int(Document.Properties["PlatformOfflinePeriod"]))
+restart_date = Document.Properties["PlatformRestartDate"]
+restart_period = TimeSpan(int(Document.Properties["PlatformRestartPeriod"]))
+back_online_date = Document.Properties["PlatformBackOnlineDate"]
+
+# Create a new data table by filtering and cloning
+rowFilter = "[Date_Prod] >= '{}' AND [Date_Prod] <= '{}'".format(shutdown_date, restart_date)
+filteredRows = prodForecast.Select(rowFilter)
+scenarioForecast = filteredRows.AsIndexSet()
+clonedTable = prodForecast.Clone(scenarioForecast, "ScenarioForecast")
+dataManager.Tables.Add(clonedTable)
+
+# Adjust the production values within the cloned table
+for row in clonedTable.GetRows(scenarioForecast, ["Date_Prod", "REGION", "Production"]):
+    date_prod = row["Date_Prod"]
+    if shutdown_date <= date_prod < shutdown_date + shutdown_period:
+        # Calculate linear decrease to zero
+        days_into_shutdown = (date_prod - shutdown_date).Days
+        total_days = shutdown_period.Days
+        row["Production"] = row["Production"] * (1 - (days_into_shutdown / float(total_days)))
+    elif offline_date <= date_prod < offline_date + offline_period:
+        # Set production to zero during offline period
+        row["Production"] = 0
+    elif restart_date <= date_prod < restart_date + restart_period:
+        # Calculate linear increase from zero
+        days_into_restart = (date_prod - restart_date).Days
+        total_days = restart_period.Days
+        row["Production"] = row["Production"] * (days_into_restart / float(total_days))
+
+# Save changes to the new table
+clonedTable.SaveSettings = DataTableSaveSettings(clonedTable, True)
