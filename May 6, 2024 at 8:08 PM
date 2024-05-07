@@ -1,0 +1,39 @@
+# Convert all date properties from character to Date type explicitly
+PlatformShutdownDate <- as.Date(PlatformShutdownDate)
+PlatformOfflineDate <- as.Date(PlatformOfflineDate)
+PlatformRestartDate <- as.Date(PlatformRestartDate)
+PlatformBackOnlineDate <- as.Date(PlatformBackOnlineDate)
+
+# Ensure Date_Prod is a Date object
+prodForecast$Date_Prod <- as.Date(prodForecast$Date_Prod)
+
+# Create ScenarioForecast by cloning relevant rows
+ScenarioForecast <- subset(prodForecast, Date_Prod >= PlatformShutdownDate & Date_Prod <= PlatformBackOnlineDate)
+
+# Set production to zero during the offline period
+ScenarioForecast$Production <- ifelse(ScenarioForecast$Date_Prod >= PlatformOfflineDate & ScenarioForecast$Date_Prod <= PlatformRestartDate, 0, ScenarioForecast$Production)
+
+# Calculate the production reduction during the shutdown period
+if (PlatformShutdownPeriod > 0) {
+  reduction_rate <- ScenarioForecast$Production / PlatformShutdownPeriod
+  days_into_shutdown <- as.integer(ScenarioForecast$Date_Prod - PlatformShutdownDate)
+  ScenarioForecast$Production <- ifelse(
+    ScenarioForecast$Date_Prod >= PlatformShutdownDate & ScenarioForecast$Date_Prod < PlatformOfflineDate,
+    ScenarioForecast$Production - (days_into_shutdown * reduction_rate),
+    ScenarioForecast$Production
+  )
+}
+
+# Calculate the production increase during the restart period
+if (PlatformRestartPeriod > 0) {
+  increase_rate <- ScenarioForecast$Production / PlatformRestartPeriod
+  days_into_restart <- as.integer(ScenarioForecast$Date_Prod - PlatformRestartDate)
+  ScenarioForecast$Production <- ifelse(
+    ScenarioForecast$Date_Prod > PlatformRestartDate & ScenarioForecast$Date_Prod <= PlatformBackOnlineDate,
+    ScenarioForecast$Production + (days_into_restart * increase_rate),
+    ScenarioForecast$Production
+  )
+}
+
+# Output the modified table
+print(ScenarioForecast)
