@@ -1,0 +1,34 @@
+# Assuming the following parameters are passed into the script:
+# PlatformShutdownDate, PlatformShutdownPeriod, PlatformOfflineDate, PlatformOfflinePeriod
+# PlatformRestartDate, PlatformRestartPeriod, PlatformBackOnlineDate
+
+# Load the original prodForecast data frame (assuming it's already loaded as input)
+# Data Frame: prodForecast with columns: Date_Prod, REGION, Production
+
+# Convert date properties from character to Date type if necessary
+PlatformShutdownDate <- as.Date(PlatformShutdownDate)
+PlatformOfflineDate <- as.Date(PlatformOfflineDate)
+PlatformRestartDate <- as.Date(PlatformRestartDate)
+PlatformBackOnlineDate <- as.Date(PlatformBackOnlineDate)
+
+# Create ScenarioForecast by cloning relevant rows
+ScenarioForecast <- subset(prodForecast, Date_Prod >= PlatformShutdownDate & Date_Prod <= PlatformBackOnlineDate)
+
+# Apply changes for Production during shutdown and restart periods
+ScenarioForecast$Production <- ifelse(
+  ScenarioForecast$Date_Prod >= PlatformShutdownDate & ScenarioForecast$Date_Prod < PlatformOfflineDate,
+  seq(from = ScenarioForecast$Production, to = 0, length.out = PlatformShutdownPeriod),
+  ScenarioForecast$Production
+)
+
+ScenarioForecast$Production <- ifelse(
+  ScenarioForecast$Date_Prod > PlatformRestartDate & ScenarioForecast$Date_Prod <= PlatformBackOnlineDate,
+  seq(from = 0, to = ScenarioForecast$Production, length.out = PlatformRestartPeriod),
+  ScenarioForecast$Production
+)
+
+# Set Production to zero during the offline period
+ScenarioForecast$Production[ScenarioForecast$Date_Prod >= PlatformOfflineDate & ScenarioForecast$Date_Prod <= PlatformRestartDate] <- 0
+
+# Output the modified table
+print(ScenarioForecast)
