@@ -1,0 +1,23 @@
+# Define the data function
+spotfireDataFunction <- function(inputData) {
+  # Extract unique combinations of FacilityName, UnitName, and UnitCapacity
+  uniqueCombinations <- unique(inputData[, c("FacilityName", "UnitName", "UnitCapacity")])
+  
+  # Create a sequence of dates from today to one year ahead
+  dateSequence <- seq(from = Sys.Date(), by = "day", length.out = 365)
+  
+  # Create a data frame to hold the forecast data
+  refForecast <- expand.grid(Date = dateSequence,
+                             FacilityName = uniqueCombinations$FacilityName,
+                             UnitName = uniqueCombinations$UnitName,
+                             UnitCapacity = uniqueCombinations$UnitCapacity)
+  
+  # Format the Date column to m-d-Y format
+  refForecast$Date <- format(refForecast$Date, format = "%m-%d-%Y")
+  
+  # Ensure the object is properly named and returned
+  return(list(refForecast = refForecast))
+}
+
+# Assume inputData is the GENSCAPE_REFINERY_REPORTS data table
+# inputData <- GENSCAPE_REFINERY_REPORTS # Uncomment this in Spotfire
