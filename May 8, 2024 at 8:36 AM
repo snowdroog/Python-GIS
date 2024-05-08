@@ -1,0 +1,24 @@
+# Load the data table from Spotfire
+# Assume 'GENSCAPE_REFINERY_REPORTS' is already loaded into the environment
+
+# Extract unique combinations of FacilityName, UnitName, and UnitCapacity
+unique_combinations <- unique(GENSCAPE_REFINERY_REPORTS[, c("FacilityName", "UnitName", "UnitCapacity")])
+
+# Generate a sequence of dates from today to one year from now
+dates <- seq(Sys.Date(), by="day", length.out=365)
+
+# Create a dataframe of all dates for use in combination
+dates_df <- data.frame(Date = dates)
+
+# Format dates as 'm-d-Y'
+dates_df$Date <- format(dates_df$Date, "%m-%d-%Y")
+
+# Create all combinations of dates and unique facility data
+refForecast <- expand.grid(Date = dates_df$Date, unique_combinations)
+
+# Assuming the output needs to be in Spotfire data table format
+# If you need to create a Spotfire data function, you would generally output this dataframe to Spotfire directly
+# This script is assuming that you will manually input this dataframe into Spotfire after running it in an R environment
+
+# Print the first few rows to verify output
+head(refForecast)
