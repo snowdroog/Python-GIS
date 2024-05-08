@@ -1,0 +1,42 @@
+# Assuming GENSCAPE_STORAGE_REPORT is already available as a dataframe
+
+# Get the current date to determine the time frames for data filtering
+current_date <- Sys.Date()
+start_date_last_year <- as.Date(paste(format(current_date, "%Y") - 1, "01", "01", sep="-"))
+end_date_last_year <- as.Date(paste(format(current_date, "%Y"), "01", "01", sep="-")) - 1
+start_date_last_four_years <- as.Date(paste(format(current_date, "%Y") - 4, "01", "01", sep="-"))
+
+# Filter data for the last year
+last_year_data <- GENSCAPE_STORAGE_REPORT[GENSCAPE_STORAGE_REPORT$Date >= start_date_last_year & GENSCAPE_STORAGE_REPORT$Date <= end_date_last_year,]
+
+# Create a new table StorageReport and initially fill it with last year data
+StorageReport <- last_year_data
+
+# Filter data for the last four years
+four_year_data <- GENSCAPE_STORAGE_REPORT[GENSCAPE_STORAGE_REPORT$Date >= start_date_last_four_years & GENSCAPE_STORAGE_REPORT$Date < current_date,]
+
+# Calculate min and max StorageAmount per month over the last 4 years
+min_max_data <- do.call(rbind, lapply(split(four_year_data, list(four_year_data$Region, format(four_year_data$Date, "%Y"), format(four_year_data$Date, "%m"))), function(df) {
+  if (nrow(df) > 0) {
+    data.frame(
+      Date = as.Date(paste(unique(format(df$Date, "%Y")), unique(format(df$Date, "%m")), "01", sep="-")),
+      Region = unique(df$Region),
+      StorageAmountMin = min(df$StorageAmount),
+      StorageAmountMax = max(df$StorageAmount)
+    )
+  }
+}))
+
+# Append suffixed region names and adjust rows to StorageReport
+min_max_data <- transform(min_max_data,
+                          RegionMin = paste(Region, "4YearMin", sep=""),
+                          RegionMax = paste(Region, "4YearMax", sep=""))
+
+min_rows <- data.frame(Date = min_max_data$Date, Region = min_max_data$RegionMin, StorageAmount = min_max_data$StorageAmountMin)
+max_rows <- data.frame(Date = min_max_data$Date, Region = min_max_data$RegionMax, StorageAmount = min_max_data$StorageAmountMax)
+
+# Append min and max rows to the StorageReport
+StorageReport <- rbind(StorageReport, min_rows, max_rows)
+
+# Print the final StorageReport for preview
+print(StorageReport)
