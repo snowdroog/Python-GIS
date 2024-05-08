@@ -1,0 +1,32 @@
+# Load data from GENSCAPE_REFINERY_REPORTS data table
+# Assuming data is already loaded in the variable gRefReports
+
+# Extract unique combinations of FacilityName, UnitName, and UnitCapacity
+unique_combinations <- unique(gRefReports[, c("FacilityName", "UnitName", "UnitCapacity")])
+
+# Generate date sequence from today to one year in the future
+dates <- seq(from = Sys.Date(), by = "day", length.out = 365)
+
+# Create empty list to store data frames for each date
+data_frames <- list()
+
+# Loop through each date and each unique combination to create the refForecast table
+for (date in dates) {
+  # Format date as m-d-Y
+  formatted_date <- format(date, "%m-%d-%Y")
+  
+  # Create a temporary data frame for current date with all unique combinations
+  temp_df <- data.frame(Date = formatted_date,
+                        FacilityName = unique_combinations$FacilityName,
+                        UnitName = unique_combinations$UnitName,
+                        UnitCapacity = unique_combinations$UnitCapacity)
+  
+  # Append to the list of data frames
+  data_frames[[length(data_frames) + 1]] <- temp_df
+}
+
+# Combine all data frames into a single data frame
+refForecast <- do.call(rbind, data_frames)
+
+# Optionally, print the refForecast table to check the result
+print(refForecast)
