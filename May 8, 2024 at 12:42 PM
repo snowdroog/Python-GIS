@@ -1,0 +1,29 @@
+# Define the function to execute in Spotfire Data Function
+refineryForecast <- function(data) {
+  # Ensure data is read as a data frame from Spotfire input
+  # It's assumed Spotfire provides 'data' as the GENSCAPE_REFINERY_REPORTS data table
+  df <- as.data.frame(data)
+
+  # Extract unique combinations of FacilityName, UnitName, and UnitCapacity
+  unique_combinations <- unique(df[, c("FacilityName", "UnitName", "UnitCapacity")])
+
+  # Generate dates from today to one year from now
+  start_date <- Sys.Date()
+  end_date <- as.Date(format(start_date, "%Y-%m-%d")) + 365
+  date_sequence <- seq(from = start_date, to = end_date, by = "day")
+
+  # Format dates as "m-d-Y"
+  formatted_dates <- format(date_sequence, "%m-%d-%Y")
+
+  # Create a data frame for every date with each unique combination
+  forecast <- expand.grid(Date = formatted_dates, unique_combinations)
+
+  # Rearrange columns to match the expected output
+  forecast <- forecast[c("Date", "FacilityName", "UnitName", "UnitCapacity")]
+
+  # Return the data frame to Spotfire to create the new table refForecast
+  return(forecast)
+}
+
+# Example call (this line is typically handled by Spotfire directly, not manually)
+# refForecast <- refineryForecast(data_from_spotfire)
