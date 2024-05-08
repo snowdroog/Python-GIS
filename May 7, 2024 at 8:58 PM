@@ -1,0 +1,39 @@
+# Assuming GENSCAPE_STORAGE_REPORT is already available as a dataframe
+
+# Current date to determine last year and last four years' range
+current_date <- Sys.Date()
+start_date_last_year <- as.Date(paste(format(current_date, "%Y") - 1, "01", "01", sep="-"))
+end_date_last_year <- as.Date(paste(format(current_date, "%Y"), "01", "01", sep="-")) - 1
+start_date_last_four_years <- as.Date(paste(format(current_date, "%Y") - 4, "01", "01", sep="-"))
+
+# Filter data for the last year
+last_year_data <- GENSCAPE_STORAGE_REPORT[GENSCAPE_STORAGE_REPORT$Date >= start_date_last_year & GENSCAPE_STORAGE_REPORT$Date <= end_date_last_year,]
+
+# Create StorageReport and initially fill it with last year data
+StorageReport <- last_year_data
+
+# Calculate min and max StorageAmount per month over the last 4 years
+processed_data <- do.call(rbind, lapply(split(GENSCAPE_STORAGE_REPORT, list(GENSCAPE_STORAGE_REPORT$Region, format(GENSCAPE_STORAGE_REPORT$Date, "%Y"), format(GENSCAPE_STORAGE_REPORT$Date, "%m")), function(df) {
+  if (nrow(df) > 0) {
+    data.frame(
+      Date = as.Date(paste(format(df$Date[1], "%Y"), format(df$Date[1], "%m"), "01", sep="-")),
+      Region = df$Region[1],
+      StorageAmountMin = min(df$StorageAmount),
+      StorageAmountMax = max(df$StorageAmount)
+    )
+  }
+}))
+
+# Append suffixed region names and adjusted rows to StorageReport
+min_max_data <- transform(processed_data, 
+                          RegionMin = paste(Region, "4YearMin", sep=""),
+                          RegionMax = paste(Region, "4YearMax", sep=""))
+
+min_rows <- data.frame(Date = min_max_data$Date, Region = min_max_data$RegionMin, StorageAmount = min_max_data$StorageAmountMin)
+max_rows <- data.frame(Date = min_max_data$Date, Region = min_max_data$RegionMax, StorageAmount = min_max_data$StorageAmountMax)
+
+# Finalize the StorageReport by appending min and max rows
+StorageReport <- rbind(StorageReport, min_rows, max_rows)
+
+# Print the final StorageReport for preview
+print(StorageReport)
