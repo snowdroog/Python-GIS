@@ -1,0 +1,22 @@
+# Load the GENSCAPE_REFINERY_REPORTS data table into a dataframe
+data <- GENSCAPE_REFINERY_REPORTS
+
+# Extract unique combinations of FacilityName, UnitName, and UnitCapacity
+unique_combinations <- unique(data[, c("FacilityName", "UnitName", "UnitCapacity")])
+
+# Generate dates from today to one year from now
+start_date <- Sys.Date()
+end_date <- as.Date(format(start_date, "%Y-%m-%d")) + 365
+date_sequence <- seq(from = start_date, to = end_date, by = "day")
+
+# Format dates as "m-d-Y"
+formatted_dates <- format(date_sequence, "%m-%d-%Y")
+
+# Create a data frame for every date with each unique combination
+refForecast <- expand.grid(Date = formatted_dates, unique_combinations)
+
+# Reorder columns to ensure proper formatting
+refForecast <- refForecast[c("Date", "FacilityName", "UnitName", "UnitCapacity")]
+
+# Print the first few rows of the forecast table to check
+print(head(refForecast))
