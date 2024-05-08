@@ -1,0 +1,44 @@
+# Assuming data is loaded into GENSCAPE_REFINERY_REPORTS
+# Extract unique combinations of FacilityName and UnitName
+unique_combos <- unique(GENSCAPE_REFINERY_REPORTS[, c("FacilityName", "UnitName")])
+
+# Ensure that the data frame has the expected structure
+if (!("FacilityName" %in% names(GENSCAPE_REFINERY_REPORTS)) || !("UnitName" %in% names(GENSCAPE_REFINERY_REPORTS))) {
+  stop("GENSCAPE_REFINERY_REPORTS does not have the expected columns.")
+}
+
+# Generate a sequence of dates from today to one year from now
+tryCatch({
+    date_sequence <- seq(from = Sys.Date(), by = "day", length.out = 365)
+  }, error = function(e) {
+    stop("Error in generating date sequence: ", e$message)
+  })
+
+# Initialize an empty data frame to store the final output
+refForecast <- data.frame(Date = character(),
+                          FacilityName = character(),
+                          UnitName = character(),
+                          stringsAsFactors = FALSE)
+
+# Populate the refForecast table with all combinations of dates and facility/unit pairs
+for (date in date_sequence) {
+  # Format the date and check for errors explicitly
+  formatted_date <- tryCatch({
+      format(date, "%m-%d-%Y")
+    }, error = function(e) {
+      message("Error formatting date: ", date, " with error: ", e$message)
+      next  # Skip this iteration if the date cannot be formatted
+    })
+
+  # Create a temporary data frame for this date with all unique facility and unit combinations
+  temp_data <- data.frame(Date = formatted_date,
+                          FacilityName = unique_combos$FacilityName,
+                          UnitName = unique_combos$UnitName,
+                          stringsAsFactors = FALSE)
+  
+  # Append the temporary data frame to the main refForecast data frame
+  refForecast <- rbind(refForecast, temp_data)
+}
+
+# Output the refForecast table
+print(refForecast)
