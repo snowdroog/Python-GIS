@@ -1,0 +1,20 @@
+# Correct the formatting of the date
+date_sequence <- seq(from = Sys.Date(), by = "day", length.out = 365)
+
+# Initialize an empty data frame to store the final output
+refForecast <- data.frame(Date = character(),
+                          FacilityName = character(),
+                          UnitName = character(),
+                          stringsAsFactors = FALSE)
+
+# Populate the refForecast table with all combinations of dates and facility/unit pairs
+for (date in date_sequence) {
+    # Create a temporary data frame for this date with all unique facility and unit combinations
+    temp_data <- data.frame(Date = format(date, "%m-%d-%Y"),  # Ensure proper quotation marks here
+                            FacilityName = unique_combos$FacilityName,
+                            UnitName = unique_combos$UnitName,
+                            stringsAsFactors = FALSE)
+    
+    # Append the temporary data frame to the main refForecast data frame
+    refForecast <- rbind(refForecast, temp_data)
+}
