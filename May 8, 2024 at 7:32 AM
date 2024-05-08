@@ -1,0 +1,27 @@
+# Assuming data is already loaded into GENSCAPE_REFINERY_REPORTS
+# Extract unique combinations of FacilityName and UnitName
+unique_combos <- unique(GENSCAPE_REFINERY_REPORTS[, c("FacilityName", "UnitName")])
+
+# Generate a sequence of dates from today to one year from now
+date_sequence <- seq(from = Sys.Date(), by = "day", length.out = 365)
+
+# Initialize an empty data frame to store the final output
+refForecast <- data.frame(Date = character(),
+                          FacilityName = character(),
+                          UnitName = character(),
+                          stringsAsFactors = FALSE)
+
+# Populate the refForecast table with all combinations of dates and facility/unit pairs
+for (date in date_sequence) {
+    # Create a temporary data frame for this date with all unique facility and unit combinations
+    temp_data <- data.frame(Date = format(date, "%m-%d-%Y"),
+                            FacilityName = unique_combos$FacilityName,
+                            UnitName = unique_combos$UnitName,
+                            stringsAsFactors = FALSE)
+    
+    # Append the temporary data frame to the main refForecast data frame
+    refForecast <- rbind(refForecast, temp_data)
+}
+
+# Output the refForecast table
+print(refForecast)
