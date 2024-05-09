@@ -1,0 +1,47 @@
+# Assuming data is loaded into 'GENSCAPE_STORAGE_REPORT' in your Spotfire environment
+last_year_data <- GENSCAPE_STORAGE_REPORT[GENSCAPE_STORAGE_REPORT$Date > as.Date(Sys.Date()) - 365,]
+
+# Data frame to hold min and max calculations
+min_max_storage <- data.frame(Date = as.Date(character()), Region = character(), StorageAmount = numeric(), ExtraInfo = character())
+
+# Iterate over each region
+for(region in unique(GENSCAPE_STORAGE_REPORT$Region)) {
+  # Iterate over each month
+  for(month in 1:12) {
+    # Iterate over each day of the month
+    for(day in 1:31) {
+      # Filter data for the specific region, month, day, and last 4 years
+      relevant_data <- GENSCAPE_STORAGE_REPORT[GENSCAPE_STORAGE_REPORT$Region == region &
+                                               format(GENSCAPE_STORAGE_REPORT$Date, "%m") == sprintf("%02d", month) &
+                                               format(GENSCAPE_STORAGE_REPORT$Date, "%d") == sprintf("%02d", day) &
+                                               GENSCAPE_STORAGE_REPORT$Date >= as.Date(Sys.Date()) - (4*365), ]
+      
+      # Calculate min and max if there are rows of data
+      if(nrow(relevant_data) > 0) {
+        min_val <- min(relevant_data$StorageAmount, na.rm = TRUE)
+        max_val <- max(relevant_data$StorageAmount, na.rm = TRUE)
+        
+        # Append results for min storage
+        min_max_storage <- rbind(min_max_storage, data.frame(
+          Date = as.Date(paste(year(Sys.Date()), sprintf("%02d", month), sprintf("%02d", day), sep = "-")),
+          Region = paste(region, "4YearMin", sep = "_"),
+          StorageAmount = min_val,
+          ExtraInfo = "Min of last 4 years"
+        ))
+        
+        # Append results for max storage
+        min_max_storage <- rbind(min_max_storage, data.frame(
+          Date = as.Date(paste(year(Sys.Date()), sprintf("%02d", month), sprintf("%02d", day), sep = "-")),
+          Region = paste(region, "4YearMax", sep = "_"),
+          StorageAmount = max_val,
+          ExtraInfo = "Max of last 4 years"
+        ))
+      }
+    }
+  }
+}
+
+# Combine the last year data with the calculated min/max storage data
+StorageReport <- rbind(last_year_data, min_max_storage)
+
+# Output StorageReport to a new table, if necessary adjust the code to integrate with Spotfire's way of handling data exports or table creation
