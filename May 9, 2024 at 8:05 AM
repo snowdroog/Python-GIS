@@ -1,0 +1,47 @@
+# Ensure the Date column is properly formatted as Date type
+GENSCAPE_STORAGE_REPORT$Date <- as.Date(GENSCAPE_STORAGE_REPORT$Date)
+
+# Generate a data frame of all dates from 4 years ago to the present
+all_dates <- data.frame(Date = seq(from = as.Date(Sys.Date()) - (4*365), to = Sys.Date(), by = "day"))
+
+# Data frame to hold min and max calculations
+min_max_storage <- data.frame(Date = as.Date(character()), Region = character(), StorageAmount = numeric(), ExtraInfo = character())
+
+# Iterate over each region
+regions <- unique(GENSCAPE_STORAGE_REPORT$Region)
+for(region in regions) {
+  # Filter the data for the current region and join with all_dates
+  region_data <- merge(all_dates, GENSCAPE_STORAGE_REPORT[GENSCAPE_STORAGE_REPORT$Region == region, ], by = "Date", all.x = TRUE)
+
+  # Iterate over each day in the region_data
+  for(i in 1:nrow(region_data)) {
+    # Check if the day's data exists
+    if(!is.na(region_data$StorageAmount[i])) {
+      # Calculate min and max for the current date
+      min_val <- min(region_data$StorageAmount[region_data$Date == region_data$Date[i] & !is.na(region_data$StorageAmount)], na.rm = TRUE)
+      max_val <- max(region_data$StorageAmount[region_data$Date == region_data$Date[i] & !is.na(region_data$StorageAmount)], na.rm = TRUE)
+      
+      # Append results for min storage
+      min_max_storage <- rbind(min_max_storage, data.frame(
+        Date = region_data$Date[i],
+        Region = paste(region, "4YearMin", sep = "_"),
+        StorageAmount = min_val,
+        ExtraInfo = "Min of last 4 years"
+      ))
+      
+      # Append results for max storage
+      min_max_storage <- rbind(min_max_storage, data.frame(
+        Date = region_data$Date[i],
+        Region = paste(region, "4YearMax", sep = "_"),
+        StorageAmount = max_val,
+        ExtraInfo = "Max of last 4 years"
+      ))
+    }
+  }
+}
+
+# Filter out the rows where StorageAmount is NA (days with no original data)
+min_max_storage <- min_max_storage[!is.na(min_max_storage$StorageAmount), ]
+
+# Combine the last year data with the calculated min/max storage data
+StorageReport <- rbind(last_year_data, min_max_storage)
