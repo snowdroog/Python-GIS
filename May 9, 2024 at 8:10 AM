@@ -1,0 +1,49 @@
+# Ensure the Date column is properly formatted as Date type
+GENSCAPE_STORAGE_REPORT$Date <- as.Date(GENSCAPE_STORAGE_REPORT$Date)
+
+# Generate a data frame of all dates from 4 years ago to the present
+all_dates <- data.frame(Date = seq(from = as.Date(Sys.Date()) - (4*365), to = Sys.Date(), by = "day"))
+
+# Ensure that StorageAmount and Region are present in all rows of GENSCAPE_STORAGE_REPORT
+GENSCAPE_STORAGE_REPORT <- na.omit(GENSCAPE_STORAGE_REPORT[, c("Date", "Region", "StorageAmount")])
+
+# Data frame to hold min and max calculations
+min_max_storage <- data.frame(Date = as.Date(character()), Region = character(), StorageAmount = numeric(), ExtraInfo = character(), stringsAsFactors = FALSE)
+
+# Iterate over each region
+regions <- unique(GENSCAPE_STORAGE_REPORT$Region)
+for(region in regions) {
+  # Filter the data for the current region and ensure all dates have corresponding rows
+  region_data <- merge(all_dates, GENSCAPE_STORAGE_REPORT[GENSCAPE_STORAGE_REPORT$Region == region, ], by = "Date", all.x = TRUE)
+
+  # Calculate min and max for each date
+  for(date in unique(region_data$Date)) {
+    # Filter data for the current date
+    daily_data <- region_data[region_data$Date == date, ]
+    
+    # Calculate min and max if there is data for the day
+    if(any(!is.na(daily_data$StorageAmount))) {
+      min_val <- min(daily_data$StorageAmount, na.rm = TRUE)
+      max_val <- max(daily_data$StorageAmount, na.rm = TRUE)
+      
+      # Append results for min storage
+      min_max_storage <- rbind(min_max_storage, data.frame(
+        Date = date,
+        Region = paste(region, "4YearMin", sep = "_"),
+        StorageAmount = min_val,
+        ExtraInfo = "Min of last 4 years"
+      ))
+      
+      # Append results for max storage
+      min_max_storage <- rbind(min_max_storage, data.frame(
+        Date = date,
+        Region = paste(region, "4YearMax", sep = "_"),
+        StorageAmount = max_val,
+        ExtraInfo = "Max of last 4 years"
+      ))
+    }
+  }
+}
+
+# Combine the last year data with the calculated min/max storage data
+StorageReport <- rbind(GENSCAPE_STORAGE_REPORT[GENSCAPE_STORAGE_REPORT$Date > as.Date(Sys.Date()) - 365, ], min_max_storage)
