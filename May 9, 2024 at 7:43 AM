@@ -1,0 +1,12 @@
+# Assuming data is loaded into 'genscape_storage_report' in your Spotfire environment
+last_year_data <- genscape_storage_report[genscape_storage_report$Date > as.Date(Sys.Date()) - 365,]
+
+# Data frame to hold min and max calculations
+min_max_storage <- data.frame(Date = as.Date(character()), Region = character(), StorageAmount = numeric(), ExtraInfo = character())
+
+for(region in unique(genscape_storage_report$Region)) {
+  for(month in 1:12) {
+    for(day in 1:31) {
+      relevant_data <- genscape_storage_report[genscape_storage_report$Region == region & 
+                                               format(genscape_storage_report$Date, "%m") == sprintf("%02d", month) &
+                                              
