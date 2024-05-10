@@ -1,0 +1,16 @@
+# Assuming 'GENSCAPE_STORAGE_REPORT' is your data frame
+# Convert 'ReportDate' to Date type if not already
+GENSCAPE_STORAGE_REPORT$ReportDate <- as.Date(GENSCAPE_STORAGE_REPORT$ReportDate)
+
+# Set the boundary dates
+end_date <- as.Date(format(Sys.Date(), "%Y-%m-01"))  # Start of the current month
+start_date <- end_date - 365  # Start date for the last year data
+
+# Filter data for the exact last 12 months
+last_year_data <- GENSCAPE_STORAGE_REPORT[GENSCAPE_STORAGE_REPORT$ReportDate >= start_date & GENSCAPE_STORAGE_REPORT$ReportDate < end_date, ]
+
+# Filter data from the last 4 years for min/max calculation
+four_year_start_date <- end_date - 4 * 365
+four_years_data <- GENSCAPE_STORAGE_REPORT[GENSCAPE_STORAGE_REPORT$ReportDate >= four_year_start_date & GENSCAPE_STORAGE_REPORT$ReportDate < end_date, ]
+
+# The rest of the script follows...
