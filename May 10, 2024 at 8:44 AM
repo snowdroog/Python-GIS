@@ -1,0 +1,29 @@
+# Assuming 'GENSCAPE_STORAGE_REPORT' is your dataframe with the correct columns
+# Adjust the structure if it's being read from a database or another source
+
+# Filter data from the last year
+last_year_data <- GENSCAPE_STORAGE_REPORT[GENSCAPE_STORAGE_REPORT$ReportDate > Sys.Date() - 365, ]
+
+# Filter data from the last 4 years
+four_years_data <- GENSCAPE_STORAGE_REPORT[GENSCAPE_STORAGE_REPORT$ReportDate >= (Sys.Date() - 365 * 4) & GENSCAPE_STORAGE_REPORT$ReportDate <= Sys.Date(), ]
+
+# Initialize an empty data frame for the StorageReport
+StorageReport <- last_year_data
+
+# Calculate monthly min and max for each region
+for (month in unique(format(four_years_data$ReportDate, "%Y-%m"))) {
+  monthly_data <- four_years_data[format(four_years_data$ReportDate, "%Y-%m") == month, ]
+  if (nrow(monthly_data) > 0) {
+    for (region in unique(monthly_data$Region)) {
+      region_data <- monthly_data[monthly_data$Region == region, ]
+      min_val <- min(region_data$StorageAmount)
+      max_val <- max(region_data$StorageAmount)
+      min_row <- data.frame(ReportDate = as.Date(paste(month, "-01", sep="")), Region = paste(region, "_4YearMin", sep=""), StorageAmount = min_val)
+      max_row <- data.frame(ReportDate = as.Date(paste(month, "-01", sep="")), Region = paste(region, "_4YearMax", sep=""), StorageAmount = max_val)
+      StorageReport <- rbind(StorageReport, min_row, max_row)
+    }
+  }
+}
+
+# View the final StorageReport
+print(StorageReport)
