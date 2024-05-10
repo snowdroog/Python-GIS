@@ -1,0 +1,39 @@
+# Sample data structure (This would actually be your database table or dataframe)
+# GENSCAPE_STORAGE_REPORT <- data.frame(Date = as.Date('2023-05-01') + 0:364, 
+#                                       Region = rep(c("Houston", "Dallas"), each = 183), 
+#                                       StorageAmount = runif(365, 100, 200))
+
+# Filter data from the last year
+last_year_data <- GENSCAPE_STORAGE_REPORT[GENSCAPE_STORAGE_REPORT$Date > Sys.Date() - 365, ]
+
+# Determine the date 4 years ago
+start_date <- Sys.Date() - (365.25 * 4)
+
+# Filter data from the last 4 years
+four_years_data <- GENSCAPE_STORAGE_REPORT[GENSCAPE_STORAGE_REPORT$Date >= start_date & GENSCAPE_STORAGE_REPORT$Date <= Sys.Date(), ]
+
+# Create a sequence of months to evaluate
+months <- seq(as.Date(format(start_date, "%Y-%m-01")), Sys.Date(), by="month")
+
+# Initialize an empty data frame for storing results
+StorageReport <- data.frame(Date = as.Date(character()), Region = character(), StorageAmount = numeric(), stringsAsFactors = FALSE)
+
+# Copy last year data to the new table
+StorageReport <- rbind(StorageReport, last_year_data)
+
+# Calculate monthly min and max for each region
+for (i in 1:(length(months)-1)) {
+  month_data <- four_years_data[four_years_data$Date >= months[i] & four_years_data$Date < months[i + 1], ]
+  if (nrow(month_data) > 0) {
+    for (region in unique(month_data$Region)) {
+      region_data <- month_data[month_data$Region == region, ]
+      min_val <- min(region_data$StorageAmount)
+      max_val <- max(region_data$StorageAmount)
+      StorageReport <- rbind(StorageReport, data.frame(Date = months[i], Region = paste(region, "_4YearMin", sep=""), StorageAmount = min_val))
+      StorageReport <- rbind(StorageReport, data.frame(Date = months[i], Region = paste(region, "_4YearMax", sep=""), StorageAmount = max_val))
+    }
+  }
+}
+
+# View the final StorageReport
+print(StorageReport)
