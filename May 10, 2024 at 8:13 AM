@@ -1,0 +1,36 @@
+# Ensure the Date column is properly formatted as a Date type
+GENSCAPE_STORAGE_REPORT$Date <- as.Date(GENSCAPE_STORAGE_REPORT$Date)
+
+# Generate a complete sequence of dates from four years ago to today
+date_range <- seq(from = as.Date(Sys.Date()) - 4 * 365, to = Sys.Date(), by = "day")
+
+# Create a grid of all dates and regions to ensure complete coverage
+all_dates_regions <- expand.grid(Date = date_range, Region = unique(GENSCAPE_STORAGE_REPORT$Region))
+all_dates_regions <- data.frame(Date = all_dates_regions$Date, Region = all_dates_regions$Region, stringsAsFactors = FALSE)
+
+# Merge this with the main data, ensuring all dates have data (even if it's NA)
+complete_data <- merge(all_dates_regions, GENSCAPE_STORAGE_REPORT, by = c("Date", "Region"), all = TRUE)
+
+# Filter out rows where StorageAmount is NA
+complete_data <- complete_data[!is.na(complete_data$StorageAmount), ]
+
+# Check if complete_data is empty and handle it
+if (nrow(complete_data) == 0) {
+    stop("No data available after filtering NAs. Check data integrity or filtering criteria.")
+}
+
+# Aggregate to find min and max storage amounts by date and region
+min_storage <- aggregate(StorageAmount ~ Date + Region, data = complete_data, FUN = min, na.rm = TRUE)
+max_storage <- aggregate(StorageAmount ~ Date + Region, data = complete_data, FUN = max, na.rm = TRUE)
+
+# Adjust the region names for clarity
+min_storage$Region <- paste(min_storage$Region, "4YearMin", sep = "_")
+max_storage$Region <- paste(max_storage$Region, "4YearMax", sep = "_")
+
+# Combine the min and max results
+if (nrow(min_storage) > 0 && nrow(max_storage) > 0) {
+    combined_storage <- rbind(min_storage, max_storage)
+    print(combined_storage)
+} else {
+    print("One of the storage calculations resulted in an empty data frame.")
+}
