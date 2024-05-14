@@ -1,0 +1,45 @@
+# Convert 'ReportDate' to Date type if not already
+GENSCAPE_STORAGE_REPORT$ReportDate <- as.Date(GENSCAPE_STORAGE_REPORT$ReportDate)
+
+# Set the boundary dates
+end_date <- as.Date(format(Sys.Date(), "%Y-%m-01"))  # Start of the current month
+start_date <- end_date - 365  # Start date for the last year data
+
+# Filter data for the exact last 12 months
+last_year_data <- GENSCAPE_STORAGE_REPORT[GENSCAPE_STORAGE_REPORT$ReportDate >= start_date & GENSCAPE_STORAGE_REPORT$ReportDate < end_date, ]
+
+# Filter data from the last 4 years for min/max calculation
+four_year_start_date <- end_date - 4 * 365
+four_years_data <- GENSCAPE_STORAGE_REPORT[GENSCAPE_STORAGE_REPORT$ReportDate >= four_year_start_date & GENSCAPE_STORAGE_REPORT$ReportDate < end_date, ]
+
+# Initialize the output data frame with the correct columns
+StorageReport <- data.frame(ReportDate = as.Date(character()), Region = character(), StorageAmount = numeric(), stringsAsFactors = FALSE)
+
+# Include last year data to the new table
+StorageReport <- rbind(StorageReport, last_year_data)
+
+# Calculate monthly min and max for each region over the last 4 years
+for (month in unique(format(last_year_data$ReportDate, "%Y-%m"))) {
+  month_start <- as.Date(paste(month, "01", sep="-"))
+  month_end <- seq(month_start, by = "month", length = 2)[2]
+  
+  monthly_data <- four_years_data[four_years_data$ReportDate >= month_start & four_years_data$ReportDate < month_end, ]
+  
+  if (nrow(monthly_data) > 0) {
+    for (region in unique(monthly_data$Region)) {
+      region_data <- monthly_data[monthly_data$Region == region, ]
+      min_val <- min(region_data$StorageAmount)
+      max_val <- max(region_data$StorageAmount)
+      
+      # Ensure the new rows match the column structure
+      min_row <- data.frame(ReportDate = month_start, Region = paste(region, "_4YearMin", sep=""), StorageAmount = min_val)
+      max_row <- data.frame(ReportDate = month_start, Region = paste(region, "_4YearMax", sep=""), StorageAmount = max_val)
+      
+      # Append min and max records
+      StorageReport <- rbind(StorageReport, min_row, max_row)
+    }
+  }
+}
+
+# Print the final StorageReport
+print(StorageReport)
