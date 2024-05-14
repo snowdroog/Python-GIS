@@ -1,0 +1,60 @@
+# Assuming the data frame is loaded as df
+# df <- GENSCAPE_STORAGE_REPORT
+
+# Current date to determine the time periods
+current_date <- Sys.Date()
+
+# Convert current_date to the right format and calculate the date one year ago
+one_year_ago <- as.Date(current_date) - 365
+
+# Filter records from the last year
+last_year_data <- df[df$ReportDate >= one_year_ago, ]
+
+# The calculation for min and max storage will be adjusted similarly to ensure environment issues do not occur
+calculate_min_max <- function(data) {
+  results <- data.frame()
+  for (year_offset in 0:3) {
+    year_start <- format(as.Date(current_date) - 365 * year_offset, "%Y-01-01")
+    year_end <- format(as.Date(current_date) - 365 * year_offset, "%Y-12-31")
+    
+    # Filter data for the specific year
+    yearly_data <- data[data$ReportDate >= as.Date(year_start) & data$ReportDate <= as.Date(year_end), ]
+    
+    # Aggregate data by month and region
+    for (month in 1:12) {
+      month_start <- as.Date(paste(year(year_start), month, "01", sep="-"))
+      month_end <- as.Date(paste(year(year_end), month, "28", sep="-")) + 3  # To cover months ending in 30 or 31
+      month_data <- yearly_data[yearly_data$ReportDate >= month_start & yearly_data$ReportDate <= month_end, ]
+      
+      if (nrow(month_data) > 0) {
+        for (region in unique(month_data$Region)) {
+          region_data <- month_data[month_data$Region == region, ]
+          min_storage <- min(region_data$StorageAmount, na.rm = TRUE)
+          max_storage <- max(region_data$StorageAmount, na.rm = TRUE)
+          
+          results <- rbind(results, data.frame(
+            ReportDate = month_start,
+            Region = paste(region, "4YearMin", sep = "_"),
+            StorageAmount = min_storage
+          ))
+          
+          results <- rbind(results, data.frame(
+            ReportDate = month_start,
+            Region = paste(region, "4YearMax", sep = "_"),
+            StorageAmount = max_storage
+          ))
+        }
+      }
+    }
+  }
+  results
+}
+
+# Call the function on the original dataset
+min_max_data <- calculate_min_max(df)
+
+# Combine data from the last year and the calculated min/max values
+StorageReport <- rbind(last_year_data, min_max_data)
+
+# Print output to check
+print(head(StorageReport))
