@@ -1,0 +1,57 @@
+# Assuming the data frame is loaded as df
+# df <- GENSCAPE_STORAGE_REPORT
+
+# Ensure Sys.Date is being called correctly and convert to POSIXct for compatibility if needed
+current_date <- as.POSIXct(base::Sys.Date(), tz = "GMT")  # Using GMT for consistency, adjust timezone as needed
+
+# Calculate dates for last year
+one_year_ago <- current_date - (365 * 24 * 60 * 60)  # Subtract seconds equivalent to one year
+
+# Extract one year of actual data
+last_year_data <- df[as.POSIXct(df$ReportDate, tz = "GMT") >= one_year_ago, ]
+last_year_data$Type <- "Actual"  # Adding a Type column for actual data
+
+# Ensure last_year_data has all required columns for compatibility with min_max_data
+if (!"Type" %in% names(last_year_data)) {
+  last_year_data$Type <- NA
+}
+
+# Calculate the past four years' min and max storage
+calculate_min_max <- function(data) {
+  regions <- unique(data$Region)
+  results <- data.frame(ReportDate = Sys.Date(), Region = character(), StorageAmount = numeric(), Type = character(), stringsAsFactors = FALSE)
+
+  # Iterate through each region
+  for (region in regions) {
+    region_data <- data[data$Region == region, ]
+
+    # Get min and max storage amount from the last 4 years data
+    min_storage <- min(region_data$StorageAmount, na.rm = TRUE)
+    max_storage <- max(region_data$StorageAmount, na.rm = TRUE)
+
+    # Append results with proper labeling
+    results <- rbind(results, data.frame(ReportDate = Sys.Date(), Region = paste(region, "4YearMin", sep = "_"), StorageAmount = min_storage, Type = "Min"))
+    results <- rbind(results, data.frame(ReportDate = Sys.Date(), Region = paste(region, "4YearMax", sep = "_"), StorageAmount = max_storage, Type = "Max"))
+  }
+
+  return(results)
+}
+
+# Call the function on the dataset to calculate min and max from the last 4 years
+min_max_data <- calculate_min_max(df[df$ReportDate < one_year_ago & df$ReportDate >= (one_year_ago - (3 * 365 * 24 * 60 * 60)), ])
+
+# Ensure both data frames have the same columns before combining
+if (!all(names(last_year_data) == names(min_max_data))) {
+  # Adding missing columns as NA
+  for (col in names(min_max_data)) {
+    if (!col %in% names(last_year_data)) {
+      last_year_data[[col]] <- NA
+    }
+  }
+}
+
+# Combine last year's actual data with calculated min/max data
+StorageReport <- rbind(last_year_data, min_max_data)
+
+# Print output to check
+print(head(StorageReport))
