@@ -1,0 +1,54 @@
+from Spotfire.Dxp.Data import DataValueCursor
+
+def addOutageScenario(sender, args):
+    # Retrieve document properties
+    platformShutdownDate = Document.Properties["PlatformShutdownDate"]
+    platformShutdownPeriod = Document.Properties["PlatformShutdownPeriod"]
+    platformOfflineDate = Document.Properties["PlatformOfflineDate"]
+    platformOfflinePeriod = Document.Properties["PlatformOfflinePeriod"]
+    platformRestartDate = Document.Properties["PlatformRestartDate"]
+    platformRestartPeriod = Document.Properties["PlatformRestartPeriod"]
+    platformBackOnlineDate = Document.Properties["PlatformBackOnlineDate"]
+    
+    refineryShutdownDate = Document.Properties["RefineryShutdownDate"]
+    refineryShutdownPeriod = Document.Properties["RefineryShutdownPeriod"]
+    refineryOfflineDate = Document.Properties["RefineryOfflineDate"]
+    refineryOfflinePeriod = Document.Properties["RefineryOfflinePeriod"]
+    refineryRestartDate = Document.Properties["RefineryRestartDate"]
+    refineryRestartPeriod = Document.Properties["RefineryRestartPeriod"]
+    refineryBackOnlineDate = Document.Properties["RefineryBackOnlineDate"]
+
+    # Access the data table
+    dataTable = Document.Data.Tables["OutageScenarios"]
+
+    # Create cursors for each column
+    column_names = [
+        "PLATFORM_SHUTDOWN_DATE", "PLATFORM_SHUTDOWN_PERIOD", "PLATFORM_OFFLINE_DATE", "PLATFORM_OFFLINE_PERIOD", 
+        "PLATFORM_RESTART_DATE", "PLATFORM_RESTART_PERIOD", "PLATFORM_BACK_ONLINE_DATE",
+        "REFINERY_SHUTDOWN_DATE", "REFINERY_SHUTDOWN_PERIOD", "REFINERY_OFFLINE_DATE", "REFINERY_OFFLINE_PERIOD", 
+        "REFINERY_RESTART_DATE", "REFINERY_RESTART_PERIOD", "REFINERY_BACK_ONLINE_DATE"
+    ]
+    
+    cursors = {column_name: DataValueCursor.CreateFormatted(dataTable.Columns[column_name]) for column_name in column_names}
+    
+    # Use a transaction to ensure atomicity
+    with dataTable.Open() as data:
+        row = data.CreateRow()
+        data.SetValue(row, cursors["PLATFORM_SHUTDOWN_DATE"], platformShutdownDate)
+        data.SetValue(row, cursors["PLATFORM_SHUTDOWN_PERIOD"], platformShutdownPeriod)
+        data.SetValue(row, cursors["PLATFORM_OFFLINE_DATE"], platformOfflineDate)
+        data.SetValue(row, cursors["PLATFORM_OFFLINE_PERIOD"], platformOfflinePeriod)
+        data.SetValue(row, cursors["PLATFORM_RESTART_DATE"], platformRestartDate)
+        data.SetValue(row, cursors["PLATFORM_RESTART_PERIOD"], platformRestartPeriod)
+        data.SetValue(row, cursors["PLATFORM_BACK_ONLINE_DATE"], platformBackOnlineDate)
+        data.SetValue(row, cursors["REFINERY_SHUTDOWN_DATE"], refineryShutdownDate)
+        data.SetValue(row, cursors["REFINERY_SHUTDOWN_PERIOD"], refineryShutdownPeriod)
+        data.SetValue(row, cursors["REFINERY_OFFLINE_DATE"], refineryOfflineDate)
+        data.SetValue(row, cursors["REFINERY_OFFLINE_PERIOD"], refineryOfflinePeriod)
+        data.SetValue(row, cursors["REFINERY_RESTART_DATE"], refineryRestartDate)
+        data.SetValue(row, cursors["REFINERY_RESTART_PERIOD"], refineryRestartPeriod)
+        data.SetValue(row, cursors["REFINERY_BACK_ONLINE_DATE"], refineryBackOnlineDate)
+        data.AddRow(row)
+
+# Bind this function to a button
+addOutageScenario(None, None)
