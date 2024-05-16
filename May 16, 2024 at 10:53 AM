@@ -1,0 +1,48 @@
+library(httr)
+library(sf)
+library(ows4R)
+
+# Define the NOAA WFS base URL
+base_url <- "https://idpgis.ncep.noaa.gov/arcgis/services/NWS_Alerts/MapServer/WFSServer"
+
+# Initialize OWSClient for the WFS service
+ows_client <- WFSClient$new(
+  url = base_url,
+  serviceVersion = "2.0.0"
+)
+
+# List available feature types
+feature_types <- ows_client$getFeatureTypes()
+print(feature_types)
+
+# Get the 'alerts' feature type
+alerts_feature_type <- ows_client$getFeatureType("NWS_Alerts:alerts")
+
+# Query parameters for the WFS request
+query_params <- list(
+  service = "WFS",
+  version = "2.0.0",
+  request = "GetFeature",
+  typeName = "NWS_Alerts:alerts",
+  outputFormat = "application/json"
+)
+
+# Make the GET request using httr
+response <- GET(base_url, query = query_params)
+
+# Check if the request was successful
+if (status_code(response) == 200) {
+  # Parse the response content
+  geojson <- content(response, as = "text", encoding = "UTF-8")
+  
+  # Read the GeoJSON into an sf object
+  alerts_sf <- st_read(geojson, quiet = TRUE)
+  
+  # Print the first few rows of the data
+  print(head(alerts_sf))
+  
+  # Optionally save to a shapefile or other format
+  st_write(alerts_sf, "NOAA_alerts.shp", delete_dsn = TRUE)
+} else {
+  print("Failed to retrieve data from NOAA WFS")
+}
