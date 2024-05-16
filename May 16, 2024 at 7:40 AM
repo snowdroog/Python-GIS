@@ -1,0 +1,44 @@
+# Assuming the data frame is loaded as df
+df <- GENSCAPE_STORAGE_REPORT
+
+# Ensure Sys.Date is being called correctly and convert to POSIX for compatibility if needed
+current_date <- as.POSIXct(Sys.Date(), tz = "GMT")
+one_year_ago <- current_date - (365 * 24 * 60 * 60)  # Subtract seconds equivalent to one year
+four_years_ago <- current_date - (4 * 365 * 24 * 60 * 60)  # Subtract seconds equivalent to four years
+
+# Filter records from the last year and last four years by converting ReportDate to POSIX if not already
+last_year_data <- df[df$ReportDate >= as.POSIXct(one_year_ago, tz = "GMT"), ]
+four_year_data <- df[df$ReportDate >= as.POSIXct(four_years_ago, tz = "GMT"), ]
+
+# Select only the necessary columns to ensure consistency
+last_year_data <- last_year_data[, c("ReportDate", "Region", "StorageAmount")]
+four_year_data <- four_year_data[, c("ReportDate", "Region", "StorageAmount")]
+
+# Initialize the structure for min_max_data with the same columns
+min_max_data <- data.frame(ReportDate = character(), Region = character(), StorageAmount = numeric(), stringsAsFactors = FALSE)
+
+# Function to calculate min and max for each region over the last four years
+calculate_min_max <- function(data) {
+  regions <- unique(data$Region)
+  for (region in regions) {
+    region_data <- data[data$Region == region, ]
+    min_row <- region_data[which.min(region_data$StorageAmount), ]
+    min_row$Region <- paste(region, "4YearsMin")
+    max_row <- region_data[which.max(region_data$StorageAmount), ]
+    max_row$Region <- paste(region, "4YearsMax")
+    min_max_data <<- rbind(min_max_data, min_row, max_row)
+  }
+}
+
+# Calculate the min and max for the four years data
+calculate_min_max(four_year_data)
+
+# Ensure both data sets have the same structure before combining
+if (all(names(last_year_data) == names(min_max_data))) {
+  StorageReport <- rbind(last_year_data, min_max_data)
+} else {
+  stop("Datasets have different structures and cannot be combined.")
+}
+
+# Print out the check
+print(head(StorageReport))
