@@ -1,0 +1,6 @@
+# Define the structure for min_max data with the same columns
+min_max_data <- data.frame(ReportDate = as.POSIXct(character()), Region = character(), StorageAmount = numeric(), stringsAsFactors = FALSE)
+
+# Calculate min and max by month and region
+month_start <- as.POSIXct(paste(format(year_start, "%Y"), month, "01", sep = "-"), tz = "GMT")
+month_end <- as.POSIXct(paste(format(year_start, "%Y"), month, "01", sep = "-"), tz = "GMT") + (5 * 24 * 60 * 60) * 6
