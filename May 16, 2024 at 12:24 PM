@@ -1,0 +1,5 @@
+def addOutageScenario():
+    # Simple debug message to confirm function execution
+    print("Function addOutageScenario executed successfully")
+
+# Link this function to a button for execution in the Spotfire Analysis client
