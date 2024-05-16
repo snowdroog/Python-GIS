@@ -1,0 +1,48 @@
+from Spotfire.Dxp.Data import DataTable, DataType, AddRowsSettings
+from Spotfire.Dxp.Data.Import import TextFileDataSource, TextDataReaderSettings
+from System import MemoryStream, StreamWriter, SeekOrigin
+
+def add_outage_scenario(sender, args):
+    # Get the document properties
+    doc_properties = [
+        "PlatformShutdownDate", "PlatformShutdownPeriod", "PlatformOfflineDate", "PlatformOfflinePeriod",
+        "PlatformRestartDate", "PlatformRestartPeriod", "PlatformBackOnlineDate", "RefineryShutdownDate",
+        "RefineryShutdownPeriod", "RefineryOfflineDate", "RefineryOfflinePeriod", "RefineryRestartDate",
+        "RefineryRestartPeriod", "RefineryBackOnlineDate", "ScenarioName", "ScenarioCreatedDate", "ScenarioDescription"
+    ]
+    
+    # Retrieve values from the document properties
+    values = [Document.Properties[prop] for prop in doc_properties]
+    
+    # Create the new row data in CSV format
+    csv_data = ",".join(str(v) for v in values) + "\n"
+    
+    # Memory stream setup
+    stream = MemoryStream()
+    writer = StreamWriter(stream)
+    writer.Write("PlatformShutdownDate,PlatformShutdownPeriod,PlatformOfflineDate,PlatformOfflinePeriod,"
+                 "PlatformRestartDate,PlatformRestartPeriod,PlatformBackOnlineDate,RefineryShutdownDate,"
+                 "RefineryShutdownPeriod,RefineryOfflineDate,RefineryOfflinePeriod,RefineryRestartDate,"
+                 "RefineryRestartPeriod,RefineryBackOnlineDate,ScenarioName,ScenarioCreatedDate,ScenarioDescription\n")
+    writer.Write(csv_data)
+    writer.Flush()
+    stream.Seek(0, SeekOrigin.Begin)
+    
+    # Define reader settings
+    reader_settings = TextDataReaderSettings()
+    reader_settings.Separator = ","
+    for i in range(len(doc_properties)):
+        reader_settings.AddColumnNameRow(0)  # Add the column name row index
+        reader_settings.SetDataType(i, DataType.String)  # Assuming all columns are strings
+    
+    # Create the data source from the stream
+    text_data_source = TextFileDataSource(stream, reader_settings)
+    
+    # Define add rows settings
+    data_table = Document.Data.Tables["OutageScenarios"]
+    add_rows_settings = AddRowsSettings(data_table, text_data_source)
+    
+    # Add the rows to the data table
+    data_table.AddRows(text_data_source, add_rows_settings)
+    
+# Link this function to a button for execution in the Spotfire Analyst client
