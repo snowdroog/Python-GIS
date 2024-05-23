@@ -1,0 +1,18 @@
+# Spotfire Data Function Script
+
+# Input Parameters
+# DATE_MIN: The minimum date for filtering
+# DATE_MAX: The maximum date for filtering
+# IBTRACS: The input data table containing the date range for filtering
+# GENSCAPE_PIPEFLOW_REPORTS: The input data table to be filtered
+# Output: FocusedPlatformProduction: The filtered output data table
+
+# Set up input parameters
+DATE_MIN <- as.Date(DATE_MIN, format="%Y-%m-%d")
+DATE_MAX <- as.Date(DATE_MAX, format="%Y-%m-%d")
+
+# Filter the GENSCAPE_PIPEFLOW_REPORTS table based on the DATE_MIN and DATE_MAX from IBTRACS
+FilteredData <- GENSCAPE_PIPEFLOW_REPORTS[GENSCAPE_PIPEFLOW_REPORTS$DATE >= DATE_MIN & GENSCAPE_PIPEFLOW_REPORTS$DATE <= DATE_MAX, ]
+
+# Assign the filtered data to the output table
+FocusedPlatformProduction <- FilteredData
