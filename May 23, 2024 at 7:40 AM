@@ -1,0 +1,59 @@
+Certainly! Below is a detailed guide with hyperlinks to facilitate setting up a Dataverse SQL endpoint so that ArcGIS Pro can connect to it.
+
+Step 1: Configure Dataverse Environment
+
+	1.	Ensure Dataverse Instance Availability: Verify that you have access to a Microsoft Dataverse instance. You will need appropriate permissions to configure the environment.
+	2.	Enable SQL Endpoint:
+	•	Navigate to the Power Platform Admin Center.
+	•	Select the Dataverse environment you wish to configure.
+	•	Under the “Settings” tab, find and select “Features”.
+	•	Enable the “TDS endpoint (preview)” toggle. This allows you to connect to the Dataverse environment using SQL.
+
+Step 2: Configure Authentication
+
+	1.	Register an Application in Azure AD:
+	•	Go to the Azure portal.
+	•	Navigate to Azure Active Directory -> App registrations -> New registration.
+	•	Fill in the necessary details (e.g., Name, Redirect URI).
+	•	Note the Application (client) ID and Directory (tenant) ID.
+	•	Create a client secret under the “Certificates & secrets” tab and note it down.
+	2.	Grant API Permissions:
+	•	In the Azure AD app registration, go to “API permissions”.
+	•	Add a permission -> APIs my organization uses -> Search for “Dataverse”.
+	•	Select “Delegated permissions” and choose user_impersonation.
+	•	Grant admin consent for the permissions.
+
+Step 3: Setup Dataverse Security Roles
+
+	1.	Assign Security Roles:
+	•	Go to the Power Platform Admin Center.
+	•	Select the Dataverse environment and navigate to “Settings” -> “Users + permissions” -> “Security roles”.
+	•	Assign the necessary roles (e.g., System Administrator, Dataverse User) to the user or application.
+
+Step 4: Configure ArcGIS Pro
+
+	1.	Install ODBC Driver:
+	•	Download and install the ODBC driver for Dataverse from the Microsoft website.
+	2.	Create a New Database Connection in ArcGIS Pro:
+	•	Open ArcGIS Pro.
+	•	Go to the “Catalog” pane -> “Databases”.
+	•	Right-click and select “New Database Connection”.
+	•	Choose “ODBC” as the connection type.
+	•	Provide the connection details:
+	•	Server name: your_dataverse_instance.crm.dynamics.com,5558 (replace with your actual instance).
+	•	Authentication type: Use Azure Active Directory (enter the Application ID and Client Secret).
+	•	Database: Dataverse.
+
+Step 5: Verify Connection
+
+	1.	Test Connection:
+	•	In ArcGIS Pro, after providing the connection details, click “Test Connection” to ensure everything is set up correctly.
+	•	If the connection is successful, you should be able to see the Dataverse tables in the “Catalog” pane under your new database connection.
+
+Troubleshooting
+
+	•	Permissions Issues: Ensure that the user/application has the correct permissions in both Dataverse and Azure AD.
+	•	Network Issues: Ensure there are no firewall or network issues blocking the connection.
+	•	Driver Issues: Verify that the ODBC driver is correctly installed and configured.
+
+By following these steps and utilizing the provided links, you should be able to set up a Dataverse SQL endpoint and connect to it using ArcGIS Pro, allowing for seamless integration and data management between the two platforms.
