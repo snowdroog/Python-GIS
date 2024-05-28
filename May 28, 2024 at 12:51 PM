@@ -1,0 +1,12 @@
+# Retrieve the input table
+IBTRACS <- Input("IBTRACS")
+
+# Find the minimum date from DATE_MIN column
+min_date <- min(IBTRACS$DATE_MIN, na.rm = TRUE)
+
+# Find the maximum date from DATE_MAX column
+max_date <- max(IBTRACS$DATE_MAX, na.rm = TRUE)
+
+# Set the document properties
+SetProperty("StormDateMin", as.character(min_date))
+SetProperty("StormDateMax", as.character(max_date))
