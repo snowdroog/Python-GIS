@@ -1,0 +1,73 @@
+# Convert date strings to Date type and periods to integers
+RefineryShutdownDate <- as.Date(RefineryShutdownDate)
+RefineryRestartDate <- as.Date(RefineryRestartDate)
+RefineryScenarioForecast$Prod_Date <- as.Date(RefineryScenarioForecast$Prod_Date)
+RefineryScenarioForecast$ShutdownPeriod <- as.integer(RefineryShutdownPeriod)
+RefineryScenarioForecast$RestartPeriod <- as.integer(RefineryRestartPeriod)
+
+# Debug: Check date conversion
+print("Dates after conversion:")
+print(RefineryShutdownDate)
+print(RefineryRestartDate)
+print(head(RefineryScenarioForecast$Prod_Date))
+
+# Load and prepare the production forecast data frame
+extended_start <- RefineryShutdownDate - 2
+extended_end <- RefineryRestartDate + 2
+
+# Debug: Check extended start and end dates
+print(paste("Extended start:", extended_start))
+print(paste("Extended end:", extended_end))
+
+# Subset the forecast data frame
+RefineryScenarioForecast <- subset(refForecastProd_Data, Prod_Date >= extended_start & Prod_Date <= extended_end)
+
+# Debug: Check subset result
+print("Subset result:")
+print(head(RefineryScenarioForecast))
+
+if (nrow(RefineryScenarioForecast) == 0) {
+    stop("Subset operation resulted in an empty data frame. Please check your date range and data.")
+}
+
+# Initialize adjusted values with original values
+RefineryScenarioForecast$AdjustedUnitCapacity <- RefineryScenarioForecast$UnitCapacity
+RefineryScenarioForecast$AdjustedGasolineYield <- RefineryScenarioForecast$GasolineYield
+RefineryScenarioForecast$AdjustedJetYield <- RefineryScenarioForecast$JetYield
+RefineryScenarioForecast$AdjustedDistillateYield <- RefineryScenarioForecast$DistillateYield
+
+# Debug: Check initial adjustments
+print("Initial Adjusted Values:")
+print(head(RefineryScenarioForecast[c("AdjustedUnitCapacity", "AdjustedGasolineYield", "AdjustedJetYield", "AdjustedDistillateYield")]))
+
+# Apply changes during shutdown and restart periods in a single loop
+for (i in 1:nrow(RefineryScenarioForecast)) {
+    if (RefineryScenarioForecast$Prod_Date[i] >= RefineryShutdownDate & RefineryScenarioForecast$Prod_Date[i] <= RefineryRestartDate) {
+        # Calculate daily decrease
+        daily_decrease <- 1 / RefineryScenarioForecast$ShutdownPeriod[i]
+        day_from_shutdown_start <- as.integer(RefineryScenarioForecast$Prod_Date[i] - RefineryShutdownDate)
+        RefineryScenarioForecast$AdjustedUnitCapacity[i] <- RefineryScenarioForecast$UnitCapacity[i] * (1 - daily_decrease * day_from_shutdown_start)
+        RefineryScenarioForecast$AdjustedGasolineYield[i] <- RefineryScenarioForecast$GasolineYield[i] * (1 - daily_decrease * day_from_shutdown_start)
+        RefineryScenarioForecast$AdjustedJetYield[i] <- RefineryScenarioForecast$JetYield[i] * (1 - daily_decrease * day_from_shutdown_start)
+        RefineryScenarioForecast$AdjustedDistillateYield[i] <- RefineryScenarioForecast$DistillateYield[i] * (1 - daily_decrease * day_from_shutdown_start)
+    } else if (RefineryScenarioForecast$Prod_Date[i] > RefineryRestartDate) {
+        # Calculate daily increase
+        daily_increase <- 1 / RefineryScenarioForecast$RestartPeriod[i]
+        day_from_restart_start <- as.integer(RefineryScenarioForecast$Prod_Date[i] - RefineryRestartDate)
+        RefineryScenarioForecast$AdjustedUnitCapacity[i] <- RefineryScenarioForecast$UnitCapacity[i] * (1 + daily_increase * day_from_restart_start)
+        RefineryScenarioForecast$AdjustedGasolineYield[i] <- RefineryScenarioForecast$GasolineYield[i] * (1 + daily_increase * day_from_restart_start)
+        RefineryScenarioForecast$AdjustedJetYield[i] <- RefineryScenarioForecast$JetYield[i] * (1 + daily_increase * day_from_restart_start)
+        RefineryScenarioForecast$AdjustedDistillateYield[i] <- RefineryScenarioForecast$DistillateYield[i] * (1 + daily_increase * day_from_restart_start)
+    }
+}
+
+# Debug: Check adjusted values
+print("Adjusted Values after Applying Changes:")
+print(head(RefineryScenarioForecast[c("AdjustedUnitCapacity", "AdjustedGasolineYield", "AdjustedJetYield", "AdjustedDistillateYield")]))
+
+# Format date as text in the format YYYY-MM-DD
+RefineryScenarioForecast$Prod_Date <- format(RefineryScenarioForecast$Prod_Date, "%Y-%m-%d")
+
+# Debug: Final dataframe check
+print("Final Refinery Scenario Forecast:")
+print(head(RefineryScenarioForecast))
