@@ -1,0 +1,65 @@
+# Convert date strings to Date type and periods to integers
+RefineryShutdownDate <- as.Date(RefineryShutdownDate)
+RefineryRestartDate <- as.Date(RefineryRestartDate)
+RefineryOfflineDate <- as.Date(RefineryOfflineDate)
+RefineryOnlineDate <- as.Date(RefineryOnlineDate)
+RefineryShutdownPeriod <- as.integer(RefineryShutdownPeriod)
+RefineryRestartPeriod <- as.integer(RefineryRestartPeriod)
+
+# Load and prepare the prodforecast data frame
+refForecast$Prod_Date <- as.Date(refForecast$Prod_Date)
+
+# Extend the forecast period to include two days before and after the outage
+extended_start <- RefineryShutdownDate - 2
+extended_end <- RefineryRestartDate + 2
+
+RefineryScenarioForecast <- subset(refForecast, Prod_Date >= extended_start & Prod_Date <= extended_end)
+
+# Initialize Adjusted fields with original values
+RefineryScenarioForecast$AdjustedUnitCapacity <- RefineryScenarioForecast$UnitCapacity
+RefineryScenarioForecast$AdjustedGasolineYield <- RefineryScenarioForecast$GasolineYield
+RefineryScenarioForecast$AdjustedJetYield <- RefineryScenarioForecast$JetYield
+RefineryScenarioForecast$AdjustedDistillateYield <- RefineryScenarioForecast$DistillateYield
+
+# Loop through each forecast period to adjust the capacities and yields
+for (i in 1:nrow(RefineryScenarioForecast)) {
+    current_date <- RefineryScenarioForecast$Prod_Date[i]
+    
+    if (current_date >= RefineryShutdownDate & current_date < RefineryOfflineDate) {
+        # Calculate adjustments during shutdown period (before offline)
+        days_to_offline <- as.integer(RefineryOfflineDate - RefineryShutdownDate)
+        days_into_shutdown <- as.integer(current_date - RefineryShutdownDate)
+        shutdown_factor <- days_into_shutdown / days_to_offline
+        
+        # Adjust Unit Capacity and Yields proportionally to the shutdown factor (reducing to zero)
+        RefineryScenarioForecast$AdjustedUnitCapacity[i] <- RefineryScenarioForecast$UnitCapacity[i] * (1 - shutdown_factor)
+        RefineryScenarioForecast$AdjustedGasolineYield[i] <- RefineryScenarioForecast$GasolineYield[i] * (1 - shutdown_factor)
+        RefineryScenarioForecast$AdjustedJetYield[i] <- RefineryScenarioForecast$JetYield[i] * (1 - shutdown_factor)
+        RefineryScenarioForecast$AdjustedDistillateYield[i] <- RefineryScenarioForecast$DistillateYield[i] * (1 - shutdown_factor)
+        
+    } else if (current_date >= RefineryOfflineDate & current_date <= RefineryRestartDate) {
+        # During offline period, everything is effectively zero
+        RefineryScenarioForecast$AdjustedUnitCapacity[i] <- 0
+        RefineryScenarioForecast$AdjustedGasolineYield[i] <- 0
+        RefineryScenarioForecast$AdjustedJetYield[i] <- 0
+        RefineryScenarioForecast$AdjustedDistillateYield[i] <- 0
+        
+    } else if (current_date > RefineryRestartDate) {
+        # Calculate adjustments during restart period (after restart)
+        days_from_restart <- as.integer(current_date - RefineryRestartDate)
+        days_to_full_capacity <- as.integer(RefineryRestartPeriod)
+        restart_factor <- days_from_restart / days_to_full_capacity
+        
+        # Adjust Unit Capacity and Yields proportionally to the restart factor (increasing from zero)
+        RefineryScenarioForecast$AdjustedUnitCapacity[i] <- RefineryScenarioForecast$UnitCapacity[i] * restart_factor
+        RefineryScenarioForecast$AdjustedGasolineYield[i] <- RefineryScenarioForecast$GasolineYield[i] * restart_factor
+        RefineryScenarioForecast$AdjustedJetYield[i] <- RefineryScenarioForecast$JetYield[i] * restart_factor
+        RefineryScenarioForecast$AdjustedDistillateYield[i] <- RefineryScenarioForecast$DistillateYield[i] * restart_factor
+    }
+}
+
+# Format prod date as text in the format "yyyy-mm-dd"
+RefineryScenarioForecast$Prod_Date <- format(RefineryScenarioForecast$Prod_Date, "%Y-%m-%d")
+
+# View the updated RefineryScenarioForecast to verify the changes
+print(head(RefineryScenarioForecast))
