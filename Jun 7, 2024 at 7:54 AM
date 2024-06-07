@@ -1,0 +1,98 @@
+To create an API connection to Dataverse from ArcGIS Pro using a Python notebook, you’ll need to follow these steps:
+
+	1.	Set Up Your Python Environment: Make sure your Python environment within ArcGIS Pro is ready. You may need to install some packages that aren’t included by default in ArcGIS Pro.
+	2.	Install Required Packages: You’ll need packages like requests for handling HTTP requests, json for handling JSON data, and potentially pandas for data manipulation. ArcGIS Pro typically uses the Conda package manager, so you can install additional packages using the Conda environment.
+	3.	Dataverse API Information: Familiarize yourself with the Dataverse API endpoints and any authentication requirements. You may need an API token for accessing Dataverse.
+	4.	Writing the Code: Write Python code to establish the connection and retrieve data. This code will include making an HTTP GET request to the Dataverse API and handling the response.
+
+Step-by-Step Instructions:
+
+1. Open ArcGIS Pro and Access the Jupyter Notebook
+
+	•	Launch ArcGIS Pro.
+	•	Go to the “Insert” tab and click on “New Notebook”. This will open a Jupyter Notebook within ArcGIS Pro.
+
+2. Set Up Your Environment
+
+	•	Install necessary packages. You can install packages within the notebook using ! to execute shell commands.
+
+!conda install -c conda-forge requests -y
+!conda install -c anaconda pandas -y
+
+3. Import Required Libraries
+
+import requests
+import json
+import pandas as pd
+
+4. Connect to Dataverse API
+
+	•	Determine the API endpoint you need from Dataverse.
+	•	Set up the request URL and any required headers, including the API token if necessary.
+
+# Replace with your Dataverse instance URL and API endpoint
+dataverse_url = "https://demo.dataverse.org/api/search"
+
+# If API token is required
+api_token = "YOUR_API_TOKEN_HERE"
+
+# Define headers for the request
+headers = {
+    "X-Dataverse-key": api_token
+}
+
+# Parameters for the search
+params = {
+    "q": "your_query_here",
+    "type": "dataset"
+}
+
+# Make the request
+response = requests.get(dataverse_url, headers=headers, params=params)
+
+# Check the status of the request
+if response.status_code == 200:
+    print("Connection successful!")
+else:
+    print(f"Failed to connect. Status code: {response.status_code}")
+
+5. Handle the API Response
+
+	•	Parse the JSON response from the API.
+
+# Parse the JSON response
+data = response.json()
+
+# Print the data for inspection
+print(json.dumps(data, indent=2))
+
+6. Manipulate and Use the Data
+
+	•	Convert the JSON data into a Pandas DataFrame if needed.
+
+# Example: Extracting the dataset details into a DataFrame
+datasets = data.get("data", {}).get("items", [])
+
+# Create a DataFrame
+df = pd.DataFrame(datasets)
+
+# Display the DataFrame
+print(df.head())
+
+7. Visualize or Export Data
+
+	•	You can now use this data within ArcGIS Pro, visualize it, or export it for further analysis.
+
+# Save the DataFrame to a CSV file
+df.to_csv("dataverse_datasets.csv", index=False)
+
+# Display the DataFrame in the notebook
+df
+
+Tips:
+
+	•	Documentation: Refer to the Dataverse API documentation for specific endpoints and data formats.
+	•	Testing: Test your API connection and data handling with a small dataset first.
+	•	Security: Keep your API token secure and do not hard-code it into your scripts for production use.
+
+These steps should help you establish a connection to Dataverse using a Python notebook within ArcGIS Pro and manipulate the retrieved data as needed.
