@@ -1,0 +1,54 @@
+# Convert date strings to Date type and periods to integers
+RefineryShutdownDate <- as.Date(RefineryShutdownDate)
+RefineryOfflineDate <- as.Date(RefineryOfflineDate)
+RefineryRestartDate <- as.Date(RefineryRestartDate)
+RefineryBackOnlineDate <- as.Date(RefineryBackOnlineDate)
+RefineryShutdownPeriod <- as.integer(RefineryShutdownPeriod)
+RefineryOfflinePeriod <- as.integer(RefineryOfflinePeriod)
+RefineryRestartPeriod <- as.integer(RefineryRestartPeriod)
+
+# Load and preprocess the forecast data frame
+refForecast$Prod_Date <- as.Date(refForecast$Prod_Date)
+
+# Extend forecast period to include two days before and after the outage
+extended_start <- RefineryShutdownDate - 2
+extended_end <- RefineryBackOnlineDate + 2
+
+# Filter forecast data to the extended period
+RefineryScenarioForecast <- subset(refForecast, Prod_Date >= extended_start & Prod_Date <= extended_end)
+
+# Initialize adjusted Unit Capacity with original Unit Capacity
+RefineryScenarioForecast$AdjustedUnitCapacity <- RefineryScenarioForecast$UnitCapacity
+
+# Apply capacity changes during shutdown and restart periods
+
+# Handle capacity decrease during shutdown period
+if (RefineryScenarioForecast$Prod_Date[i] >= RefineryShutdownDate & RefineryScenarioForecast$Prod_Date[i] < RefineryOfflineDate) {
+    days_from_shutdown_start <- as.integer(RefineryScenarioForecast$Prod_Date[i] - RefineryShutdownDate)
+    daily_decrease <- (RefineryScenarioForecast$UnitCapacity[1] / RefineryShutdownPeriod)
+    RefineryScenarioForecast$AdjustedUnitCapacity[i] <- RefineryScenarioForecast$UnitCapacity[1] - (days_from_shutdown_start * daily_decrease)
+}
+
+# Set UnitCapacity to zero during offline period
+if (RefineryScenarioForecast$Prod_Date[i] >= RefineryOfflineDate & RefineryScenarioForecast$Prod_Date[i] < RefineryRestartDate) {
+    RefineryScenarioForecast$AdjustedUnitCapacity[i] <- 0
+}
+
+# Handle capacity increase during restart period
+if (RefineryScenarioForecast$Prod_Date[i] >= RefineryRestartDate & RefineryScenarioForecast$Prod_Date[i] < RefineryBackOnlineDate) {
+    days_from_restart_start <- as.integer(RefineryScenarioForecast$Prod_Date[i] - RefineryRestartDate)
+    daily_increase <- RefineryScenarioForecast$UnitCapacity[1] / RefineryRestartPeriod
+    projected_UnitCapacity <- days_from_restart_start * daily_increase
+    RefineryScenarioForecast$AdjustedUnitCapacity[i] <- min(projected_UnitCapacity, RefineryScenarioForecast$UnitCapacity[1])
+}
+
+# Ensure UnitCapacity before and after outage is the same
+if (RefineryScenarioForecast$Prod_Date[i] < RefineryShutdownDate | RefineryScenarioForecast$Prod_Date[i] > RefineryBackOnlineDate) {
+    RefineryScenarioForecast$AdjustedUnitCapacity[i] <- RefineryScenarioForecast$UnitCapacity[i]
+}
+
+# Format Prod_Date as text in the format mm-dd-YYYY
+RefineryScenarioForecast$Prod_Date <- format(RefineryScenarioForecast$Prod_Date, "%m-%d-%Y")
+
+# Output the modified table
+print(RefineryScenarioForecast)
