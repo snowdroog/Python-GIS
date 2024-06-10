@@ -1,0 +1,53 @@
+# Convert date strings to Date type and periods to integers
+RefineryShutdownDate <- as.Date(RefineryShutdownDate)
+RefineryOfflineDate <- as.Date(RefineryOfflineDate)
+RefineryRestartDate <- as.Date(RefineryRestartDate)
+RefineryBackonlineDate <- as.Date(RefineryBackonlineDate)
+
+# Load and prepare the data (assuming RefineryScenarioForecast is a data frame with these columns)
+# extended_start and extended_end for including buffer days around the outage period
+extended_start <- RefineryShutdownDate - 2
+extended_end <- RefineryBackonlineDate + 2
+
+# Filter data to only include relevant dates
+RefineryScenarioForecast <- subset(RefineryScenarioForecast, 
+                                   Prod_Date >= extended_start & Prod_Date <= extended_end)
+
+# Initialize UnitCapacity with the original UnitCapacity column
+RefineryScenarioForecast$AdjustedUnitCapacity <- RefineryScenarioForecast$UnitCapacity
+
+# Calculate the number of days in the shutdown and restart periods
+shutdown_days <- as.integer(RefineryOfflineDate - RefineryShutdownDate)
+restart_days <- as.integer(RefineryBackonlineDate - RefineryRestartDate)
+
+# Iterate through each row to adjust UnitCapacity
+for (i in 1:nrow(RefineryScenarioForecast)) {
+  current_date <- as.Date(RefineryScenarioForecast$Prod_Date[i])
+  
+  if (current_date < RefineryShutdownDate) {
+    # Before shutdown period, keep the UnitCapacity unchanged
+    next
+  } else if (current_date >= RefineryShutdownDate && current_date < RefineryOfflineDate) {
+    # During shutdown period, decrease UnitCapacity linearly
+    days_into_shutdown <- as.integer(current_date - RefineryShutdownDate)
+    daily_decrease <- RefineryScenarioForecast$UnitCapacity[i] / shutdown_days
+    RefineryScenarioForecast$AdjustedUnitCapacity[i] <- RefineryScenarioForecast$UnitCapacity[i] - (daily_decrease * days_into_shutdown)
+  } else if (current_date >= RefineryOfflineDate && current_date < RefineryRestartDate) {
+    # During offline period, set UnitCapacity to zero
+    RefineryScenarioForecast$AdjustedUnitCapacity[i] <- 0
+  } else if (current_date >= RefineryRestartDate && current_date < RefineryBackonlineDate) {
+    # During restart period, increase UnitCapacity linearly
+    days_into_restart <- as.integer(current_date - RefineryRestartDate)
+    daily_increase <- RefineryScenarioForecast$UnitCapacity[i] / restart_days
+    RefineryScenarioForecast$AdjustedUnitCapacity[i] <- daily_increase * days_into_restart
+  } else if (current_date >= RefineryBackonlineDate) {
+    # After the back online date, set UnitCapacity to its original value
+    RefineryScenarioForecast$AdjustedUnitCapacity[i] <- RefineryScenarioForecast$UnitCapacity[i]
+  }
+}
+
+# Format Prod_Date as text in the format "mm-dd-YYYY"
+RefineryScenarioForecast$Prod_Date <- format(as.Date(RefineryScenarioForecast$Prod_Date), "%m-%d-%Y")
+
+# Output the modified table
+print(RefineryScenarioForecast)
