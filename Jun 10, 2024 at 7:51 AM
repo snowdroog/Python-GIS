@@ -1,0 +1,85 @@
+# Convert date strings to Date type and periods to integers
+RefineryShutdownDate <- as.Date(RefineryShutdownDate)
+RefineryRestartDate <- as.Date(RefineryRestartDate)
+RefineryScenarioForecast$Prod_Date <- as.Date(RefineryScenarioForecast$Prod_Date)
+RefineryShutdownPeriod <- as.integer(RefineryShutdownPeriod)
+RefineryRestartPeriod <- as.integer(RefineryRestartPeriod)
+RefineryOfflinePeriod <- as.integer(RefineryOfflinePeriod)
+
+# Load and prepare the forecast data frame
+extended_start <- RefineryShutdownDate - 2
+extended_end <- RefineryRestartDate + 2
+
+# Filter the forecast data within the extended period
+RefineryScenarioForecast <- subset(RefineryScenarioForecast, 
+                                   Prod_Date >= extended_start & Prod_Date <= extended_end)
+
+# Initialize the adjustment columns to NA
+RefineryScenarioForecast$AdjustedGasolineYield <- NA
+RefineryScenarioForecast$AdjustedJetYield <- NA
+RefineryScenarioForecast$AdjustedDistillateYield <- NA
+RefineryScenarioForecast$AdjustedUnitCapacity <- NA
+
+# Check if the subset operation resulted in an empty data frame
+if (nrow(RefineryScenarioForecast) == 0) {
+  stop("The subset operation resulted in an empty data frame. Please check your date range and data.")
+}
+
+# Linear adjustment function
+linear_adjustment <- function(start_val, end_val, num_periods) {
+  return(seq(from = start_val, to = end_val, length.out = num_periods))
+}
+
+# Apply the adjustments during the shutdown and restart periods
+shutdown_start <- RefineryShutdownDate
+shutdown_end <- RefineryShutdownDate + RefineryShutdownPeriod - 1
+restart_start <- RefineryRestartDate
+restart_end <- RefineryRestartDate + RefineryRestartPeriod - 1
+
+# Adjust during the shutdown period
+shutdown_indices <- which(RefineryScenarioForecast$Prod_Date >= shutdown_start & 
+                          RefineryScenarioForecast$Prod_Date <= shutdown_end)
+
+if (length(shutdown_indices) > 0) {
+  num_shutdown_days <- length(shutdown_indices)
+  daily_decrease <- linear_adjustment(1, 0, num_shutdown_days)
+  
+  RefineryScenarioForecast$AdjustedUnitCapacity[shutdown_indices] <- 
+    RefineryScenarioForecast$UnitCapacity[shutdown_indices] * daily_decrease
+  RefineryScenarioForecast$AdjustedGasolineYield[shutdown_indices] <- 
+    RefineryScenarioForecast$GasolineYield[shutdown_indices] * daily_decrease
+  RefineryScenarioForecast$AdjustedJetYield[shutdown_indices] <- 
+    RefineryScenarioForecast$JetYield[shutdown_indices] * daily_decrease
+  RefineryScenarioForecast$AdjustedDistillateYield[shutdown_indices] <- 
+    RefineryScenarioForecast$DistillateYield[shutdown_indices] * daily_decrease
+}
+
+# Adjust during the restart period
+restart_indices <- which(RefineryScenarioForecast$Prod_Date >= restart_start & 
+                         RefineryScenarioForecast$Prod_Date <= restart_end)
+
+if (length(restart_indices) > 0) {
+  num_restart_days <- length(restart_indices)
+  daily_increase <- linear_adjustment(0, 1, num_restart_days)
+  
+  RefineryScenarioForecast$AdjustedUnitCapacity[restart_indices] <- 
+    RefineryScenarioForecast$UnitCapacity[restart_indices] * daily_increase
+  RefineryScenarioForecast$AdjustedGasolineYield[restart_indices] <- 
+    RefineryScenarioForecast$GasolineYield[restart_indices] * daily_increase
+  RefineryScenarioForecast$AdjustedJetYield[restart_indices] <- 
+    RefineryScenarioForecast$JetYield[restart_indices] * daily_increase
+  RefineryScenarioForecast$AdjustedDistillateYield[restart_indices] <- 
+    RefineryScenarioForecast$DistillateYield[restart_indices] * daily_increase
+}
+
+# Ensure all adjusted values are not below zero
+RefineryScenarioForecast$AdjustedUnitCapacity <- pmax(0, RefineryScenarioForecast$AdjustedUnitCapacity)
+RefineryScenarioForecast$AdjustedGasolineYield <- pmax(0, RefineryScenarioForecast$AdjustedGasolineYield)
+RefineryScenarioForecast$AdjustedJetYield <- pmax(0, RefineryScenarioForecast$AdjustedJetYield)
+RefineryScenarioForecast$AdjustedDistillateYield <- pmax(0, RefineryScenarioForecast$AdjustedDistillateYield)
+
+# Format production dates as text in the format YYYY-mm-dd
+RefineryScenarioForecast$Prod_Date <- format(RefineryScenarioForecast$Prod_Date, "%Y-%m-%d")
+
+# Display the updated data frame
+print(RefineryScenarioForecast)
