@@ -1,0 +1,53 @@
+# Convert date strings to Date type and periods to integers
+PlatformShutdownDate <- as.Date(PLATFORM_SHUTDOWN_DATE)
+PlatformOfflineDate <- as.Date(PLATFORM_OFFLINE_DATE)
+PlatformRestartDate <- as.Date(PLATFORM_RESTART_DATE)
+PlatformBackOnlineDate <- as.Date(PLATFORM_BACK_ONLINE_DATE)
+
+PlatformShutdownPeriod <- as.integer(PLATFORM_SHUTDOWN_PERIOD)
+PlatformOfflinePeriod <- as.integer(PLATFORM_OFFLINE_PERIOD)
+PlatformRestartPeriod <- as.integer(PLATFORM_RESTART_PERIOD)
+
+# Load and prepare the prodForecast data frame
+prodForecast$Date_Prod <- as.Date(prodForecast$Date_Prod)
+
+# Extend the forecast period to include two days before and after the outage
+extended_start <- PlatformShutdownDate - 2
+extended_end <- PlatformBackOnlineDate + 2
+
+ScenarioForecast <- subset(prodForecast, Date_Prod >= extended_start & Date_Prod <= extended_end)
+
+# Initialize AdjustedProduction with original production
+ScenarioForecast$AdjustedProduction <- ScenarioForecast$Production
+
+# Apply production changes during the shutdown and restart periods
+ScenarioForecast$AdjustedProduction <- ifelse(
+  ScenarioForecast$Date_Prod >= PlatformShutdownDate & ScenarioForecast$Date_Prod < PlatformOfflineDate,
+  pmax(0, ScenarioForecast$Production * (1 - (ScenarioForecast$Date_Prod - PlatformShutdownDate) / PlatformShutdownPeriod)),
+  ScenarioForecast$AdjustedProduction
+)
+
+ScenarioForecast$AdjustedProduction <- ifelse(
+  ScenarioForecast$Date_Prod >= PlatformOfflineDate & ScenarioForecast$Date_Prod < PlatformRestartDate,
+  0,
+  ScenarioForecast$AdjustedProduction
+)
+
+ScenarioForecast$AdjustedProduction <- ifelse(
+  ScenarioForecast$Date_Prod >= PlatformRestartDate & ScenarioForecast$Date_Prod <= PlatformBackOnlineDate,
+  pmin(ScenarioForecast$Production, ScenarioForecast$Production * ((ScenarioForecast$Date_Prod - PlatformRestartDate) / PlatformRestartPeriod)),
+  ScenarioForecast$AdjustedProduction
+)
+
+# Ensure production before and after outage is the same
+ScenarioForecast$AdjustedProduction <- ifelse(
+  ScenarioForecast$Date_Prod < PlatformShutdownDate | ScenarioForecast$Date_Prod > PlatformBackOnlineDate,
+  ScenarioForecast$Production,
+  ScenarioForecast$AdjustedProduction
+)
+
+# Format prod_date as text in the format mm-dd-YYYY
+ScenarioForecast$Date_Prod <- format(ScenarioForecast$Date_Prod, "%m-%d-%Y")
+
+# Output the modified table
+print(ScenarioForecast)
