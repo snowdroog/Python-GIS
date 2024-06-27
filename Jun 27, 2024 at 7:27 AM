@@ -1,0 +1,42 @@
+from Spotfire.Dxp.Application import DocumentProperties
+from Spotfire.Dxp.Data import DataValueCursor, IndexSet
+from System import DateTime
+
+# 1. Get Data Table
+data_table = Document.Data.Tables["IBTRACS_DISSOLVE_1950_WITH_PLATFORM_STATUS_AND_DATE_RANGES"]
+
+# 2. Initialize Variables
+min_date = None
+max_date = None
+
+# 3. Get Selected Rows
+selected_rows = Document.ActiveMarkingSelectionReference.GetSelection(data_table).AsIndexSet()
+
+# Check if there are no selected rows and exit gracefully if so
+if selected_rows.Count == 0:
+    print("No rows marked. Exiting script.")
+    # Optionally, set the Document Properties to None or an appropriate default
+    Document.Properties["StormDateMin"] = None
+    Document.Properties["StormDateMax"] = None
+    exit()
+
+# 4. Create cursors for the columns DATE MIN and DATE MAX
+date_min_cursor = DataValueCursor.Create(data_table.Columns["DATE_MIN"])
+date_max_cursor = DataValueCursor.Create(data_table.Columns["DATE_MAX"])
+
+# 5. Iterate Over Rows
+for row in data_table.GetRows(selected_rows, date_min_cursor, date_max_cursor):
+    date_min = date_min_cursor.CurrentValue
+    date_max = date_max_cursor.CurrentValue
+    
+    # Initialize min date and max date if they are None
+    if min_date is None or date_min < min_date:
+        min_date = date_min
+    if max_date is None or date_max > max_date:
+        max_date = date_max
+
+# 6. Set Document Properties
+Document.Properties["StormDateMin"] = str(min_date) if min_date else None
+Document.Properties["StormDateMax"] = str(max_date) if max_date else None
+
+print("Document properties StormDateMin and StormDateMax have been updated.")
