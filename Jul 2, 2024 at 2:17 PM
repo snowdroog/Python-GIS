@@ -1,0 +1,6 @@
+case 
+    WHEN ([production] < [10PercentLessThan7DayAverage]) THEN "Platform Shutdown"
+    WHEN ([production] = 0) THEN "Platform Offline"
+    WHEN ([production] > [10PercentLessThan7DayAverage]) THEN "Platform Restart"
+    ELSE NULL
+END
