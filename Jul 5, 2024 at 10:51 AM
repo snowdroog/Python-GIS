@@ -1,0 +1,43 @@
+from Spotfire.Dxp.Application.Visuals import TablePlot
+from Spotfire.Dxp.Data import DataPropertyClass
+from Spotfire.Dxp.Data import IndexSet
+
+def update_platform_list(selection, scenario_property):
+    existing_platforms = Document.Properties[scenario_property].split(',')
+    existing_platforms = [p.strip() for p in existing_platforms if p.strip()]
+    new_platforms = [row.Cells["PlatformName"].Value for row in selection]
+
+    # Remove duplicates from other scenarios
+    for prop in scenario_properties:
+        if prop != scenario_property:
+            other_platforms = Document.Properties[prop].split(',')
+            other_platforms = [p.strip() for p in other_platforms if p.strip()]
+            new_platforms = [p for p in new_platforms if p not in other_platforms]
+            Document.Properties[prop] = ','.join([p for p in other_platforms if p not in new_platforms])
+
+    # Update the current scenario
+    updated_platforms = list(set(existing_platforms + new_platforms))
+    Document.Properties[scenario_property] = ','.join(updated_platforms)
+
+# List of document properties for the scenarios
+scenario_properties = ["PlatformListOutageScenario1", "PlatformListOutageScenario2", "PlatformListOutageScenario3"]
+
+# Example to get selection for a specific marking (replace 'MyMarking' with your marking name)
+marking1 = Document.Markings["PlatformsScenario1"]
+marking2 = Document.Markings["PlatformsScenario2"]
+marking3 = Document.Markings["PlatformsScenario3"]
+platform_table = Document.Data.Tables["PLATFORM_LOCATIONS"]
+
+platform_selection1 = marking1.GetSelection(platform_table)
+platform_selection2 = marking2.GetSelection(platform_table)
+platform_selection3 = marking3.GetSelection(platform_table)
+
+# Check if any platforms are selected and update the respective scenario property
+if not platform_selection1.IsEmpty:
+    update_platform_list(platform_selection1.AsIndexSet(), "PlatformListOutageScenario1")
+
+if not platform_selection2.IsEmpty:
+    update_platform_list(platform_selection2.AsIndexSet(), "PlatformListOutageScenario2")
+
+if not platform_selection3.IsEmpty:
+    update_platform_list(platform_selection3.AsIndexSet(), "PlatformListOutageScenario3")
