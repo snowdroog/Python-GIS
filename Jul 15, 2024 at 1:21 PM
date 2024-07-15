@@ -1,0 +1,52 @@
+from Spotfire.Dxp.Application.Visuals import VisualContent
+from System.Collections.Generic import List
+from Spotfire.Dxp.Data import DataValueCursor, RowSelection
+
+def sync_markings_and_properties(table, properties, markings, column_name):
+    # Helper function to get marked items as a set of strings
+    def get_marked_items(marking):
+        rows = table.GetRows(marking.GetSelection(table).AsIndexSet(), cursor)
+        marked_items = set()
+        for row in rows:
+            marked_items.add(cursor.CurrentValue)
+        return marked_items
+
+    # Setup cursor for reading values
+    cursor = DataValueCursor.CreateFormatted(table.Columns[column_name])
+
+    # Read current marked platforms for each scenario
+    marked_platforms = [get_marked_items(Document.Markings[marking]) for marking in markings]
+
+    # Update document properties with current marked items
+    for prop, platforms in zip(properties, marked_platforms):
+        Document.Properties[prop] = ";".join(platforms)
+
+    # Read the updated properties back to sets
+    updated_properties = [set(Document.Properties[prop].split(";")) if Document.Properties[prop] else set() for prop in properties]
+
+    # Remove duplicates across properties
+    for i, prop_set in enumerate(updated_properties):
+        for j, other_set in enumerate(updated_properties):
+            if i != j:
+                prop_set -= other_set
+
+    # Update document properties without duplicates
+    for prop, platforms in zip(properties, updated_properties):
+        Document.Properties[prop] = ";".join(platforms)
+
+    # Update markings based on cleaned document properties
+    for marking, platforms in zip(markings, updated_properties):
+        new_selection = RowSelection()
+        for platform in platforms:
+            rows_to_select = table.Select(column_name + " = '" + platform + "'", cursor)
+            new_selection.Add(rows_to_select)
+        Document.Markings[marking].SetSelection(new_selection, table)
+
+# Define table, properties, and markings identifiers
+table = Document.Data.Tables["PLATFORM_LOCATIONS"]
+properties = ["PlatformListOutageScenario1", "PlatformListOutageScenario2", "PlatformListOutageScenario3"]
+markings = ["PlatformsScenario1", "PlatformsScenario2", "PlatformsScenario3"]
+column_name = "PlatformName"
+
+# Synchronize markings and properties
+sync_markings_and_properties(table, properties, markings, column_name)
