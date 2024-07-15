@@ -1,0 +1,55 @@
+# Assuming the source data is named sourceData
+df <- sourceData
+
+# Convert ReportDate to POSIXct for compatibility if needed
+df$ReportDate <- as.POSIXct(df$ReportDate, tz = "GMT")
+
+# Filter records from the last year
+current_date <- Sys.Date()
+one_year_ago <- as.POSIXct(current_date - (365 * 24 * 60 * 60), tz = "GMT")
+df_last_year <- df[df$ReportDate >= one_year_ago, ]
+
+# Add year_month column for grouping
+df_last_year$year_month <- format(df_last_year$ReportDate, "%Y-%m")
+
+# Unique regions and year_months
+unique_regions <- unique(df_last_year$Region)
+unique_year_months <- unique(df_last_year$year_month)
+
+# Initialize an empty data frame for min_max_data
+min_max_data <- data.frame(
+  ReportDate = as.POSIXct(character()),
+  Region = character(),
+  min_storage = numeric(),
+  max_storage = numeric(),
+  stringsAsFactors = FALSE
+)
+
+# Calculate min and max for each month per region using base R
+for (region in unique_regions) {
+  for (year_month in unique_year_months) {
+    subset_data <- subset(df_last_year, Region == region & year_month == year_month)
+    if (nrow(subset_data) > 0) {
+      min_storage <- min(subset_data$StorageAmount, na.rm = TRUE)
+      max_storage <- max(subset_data$StorageAmount, na.rm = TRUE)
+      report_date <- as.POSIXct(paste(year_month, "-01", sep = ""), format = "%Y-%m-%d")
+      min_max_data <- rbind(min_max_data, data.frame(
+        ReportDate = report_date,
+        Region = region,
+        min_storage = min_storage,
+        max_storage = max_storage,
+        stringsAsFactors = FALSE
+      ))
+    }
+  }
+}
+
+# Ensure consistent data frame structure
+min_max_data$ReportDate <- as.POSIXct(min_max_data$ReportDate)
+min_max_data$Region <- as.character(min_max_data$Region)
+
+# Assign the processed data to the output variable StorageReport
+StorageReport <- min_max_data
+
+# Print the head of the combined data for verification
+print(head(StorageReport))

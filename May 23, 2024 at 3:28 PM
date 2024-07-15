@@ -1,0 +1,13 @@
+# Function to set the document properties
+setDateProperties <- function(DATE_MIN, DATE_MAX) {
+  # Set the document properties
+  SpotfireDocument$Properties$StormDateMin <- as.character(DATE_MIN)
+  SpotfireDocument$Properties$StormDateMax <- as.character(DATE_MAX)
+}
+
+# Define the input parameters
+DATE_MIN <- min(IBTRACS$DATE_MIN, na.rm = TRUE)
+DATE_MAX <- max(IBTRACS$DATE_MAX, na.rm = TRUE)
+
+# Call the function to set the properties
+setDateProperties(DATE_MIN, DATE_MAX)

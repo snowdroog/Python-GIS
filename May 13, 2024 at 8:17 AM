@@ -1,0 +1,56 @@
+# Convert date strings to Date type and periods to integers
+PlatformShutdownDate <- as.Date(PlatformShutdownDate)
+PlatformOfflineDate <- as.Date(PlatformOfflineDate)
+PlatformRestartDate <- as.Date(PlatformRestartDate)
+PlatformBackOnlineDate <- as.Date(PlatformBackOnlineDate)
+
+PlatformShutdownPeriod <- as.integer(PlatformShutdownPeriod)
+PlatformOfflinePeriod <- as.integer(PlatformOfflinePeriod)
+PlatformRestartPeriod <- as.integer(PlatformRestartPeriod)
+
+# Load and prepare the prodForecast data frame
+prodForecast$Date_Prod <- as.Date(prodForecast$Date_Prod)
+
+# Extend the forecast period to include two days before and after the outage
+extended_start <- PlatformShutdownDate - 2
+extended_end <- PlatformBackOnlineDate + 2
+
+# Correct subset to use extended_start and extended_end
+ScenarioForecast <- subset(prodForecast, Date_Prod >= extended_start & Date_Prod <= extended_end)
+
+# Initialize AdjustedProduction with original production
+ScenarioForecast$AdjustedProduction <- ScenarioForecast$Production
+
+# Apply production changes during the shutdown and restart periods
+for (i in 1:nrow(ScenarioForecast)) {
+  # Decrease production gradually during shutdown
+  if (ScenarioForecast$Date_Prod[i] >= PlatformShutdownDate & ScenarioForecast$Date_Prod[i] < PlatformOfflineDate) {
+    days_from_shutdown_start <- as.integer(ScenarioForecast$Date_Prod[i] - PlatformShutdownDate)
+    daily_decrease <- ScenarioForecast$Production[i] / PlatformShutdownPeriod
+    ScenarioForecast$AdjustedProduction[i] <- max(0, ScenarioForecast$Production[i] - days_from_shutdown_start * daily_decrease)
+  }
+  
+  # Set production to zero during offline period
+  if (ScenarioForecast$Date_Prod[i] >= PlatformOfflineDate & ScenarioForecast$Date_Prod[i] < PlatformRestartDate) {
+    ScenarioForecast$AdjustedProduction[i] <- 0
+  }
+  
+  # Increase production linearly during restart, without exceeding original production
+  if (ScenarioForecast$Date_Prod[i] >= PlatformRestartDate & ScenarioForecast$Date_Prod[i] <= PlatformBackOnlineDate) {
+    days_from_restart_start <- as.integer(ScenarioForecast$Date_Prod[i] - PlatformRestartDate)
+    daily_increase <- ScenarioForecast$Production[i] / PlatformRestartPeriod
+    projected_production <- days_from_restart_start * daily_increase
+    ScenarioForecast$AdjustedProduction[i] <- min(projected_production, ScenarioForecast$Production[i])
+  }
+  
+  # Ensure production before and after outage is consistent
+  if (ScenarioForecast$Date_Prod[i] < PlatformShutdownDate | ScenarioForecast$Date_Prod[i] > PlatformBackOnlineDate) {
+    ScenarioForecast$AdjustedProduction[i] <- ScenarioForecast$Production[i]
+  }
+}
+
+# Format prod_date as text in the format mm-dd-YYYY
+ScenarioForecast$Date_Prod <- format(ScenarioForecast$Date_Prod, "%m-%d-%Y")
+
+# Output the modified table
+print(ScenarioForecast)

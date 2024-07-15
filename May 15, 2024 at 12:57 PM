@@ -1,0 +1,49 @@
+# Assuming the data frame is loaded as df
+# df <- GENSCAPE_STORAGE_REPORT
+
+# Ensure Sys.Date is being called correctly and convert to POSIXct for compatibility if needed
+current_date <- as.POSIXct(base::Sys.Date(), tz = "GMT")  # Using GMT for consistency, adjust timezone as needed
+
+# Calculate dates for last year and four years ago using days instead of months to avoid unsupported unit error
+one_year_ago <- current_date - (365 * 24 * 60 * 60)  # Subtract seconds equivalent to one year
+four_years_ago <- current_date - (4 * 365 * 24 * 60 * 60)  # Subtract seconds equivalent to four years
+
+# Calculate min and max storage, ensuring date conversions are handled similarly
+calculate_min_max <- function(data) {
+  results <- data.frame(ReportDate = as.POSIXct(character()), Region = character(), StorageAmount = numeric(), Type = character(), stringsAsFactors = FALSE)
+  # Adjust to loop through the last year only for final storage data
+  for (month in 1:12) {
+    month_start <- as.POSIXct(paste(format(current_date - 365, "%Y"), month, "01", sep="-"), tz = "GMT")
+    month_end <- as.POSIXct(paste(format(current_date - 365, "%Y"), month + 1, "01", sep="-"), tz = "GMT") - 1
+
+    # Loop through the last four years of data
+    for (offset in 0:3) {
+      year_start <- as.POSIXct(paste(format(month_start - (365 * offset), "%Y"), format(month_start, "%m"), "01", sep="-"), tz = "GMT")
+      year_end <- as.POSIXct(paste(format(month_end - (365 * offset), "%Y"), format(month_end, "%m"), format(month_end, "%d"), sep="-"), tz = "GMT")
+
+      month_data <- data[as.POSIXct(data$ReportDate, tz = "GMT") >= year_start & 
+                           as.POSIXct(data$ReportDate, tz = "GMT") <= year_end, ]
+      
+      if (nrow(month_data) > 0) {
+        for (region in unique(month_data$Region)) {
+          region_data <- month_data[month_data$Region == region, ]
+          min_storage <- min(region_data$StorageAmount, na.rm = TRUE)
+          max_storage <- max(region_data$StorageAmount, na.rm = TRUE)
+          
+          results <- rbind(results, data.frame(ReportDate = month_start, Region = region, StorageAmount = min_storage, Type = "Min", stringsAsFactors = FALSE))
+          results <- rbind(results, data.frame(ReportDate = month_start, Region = region, StorageAmount = max_storage, Type = "Max", stringsAsFactors = FALSE))
+        }
+      }
+    }
+  }
+  return(results)
+}
+
+# Call the function on the original dataset
+min_max_data <- calculate_min_max(df)
+
+# The final StorageReport contains only one year of monthly min and max entries
+StorageReport <- min_max_data
+
+# Print output to check
+print(head(StorageReport))

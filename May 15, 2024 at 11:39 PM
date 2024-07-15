@@ -1,0 +1,54 @@
+# Assuming the data frame is loaded as df
+df <- GENSCAPE_STORAGE_REPORT
+
+# Ensure Sys.Date is being called correctly and convert to POSIXct for compatibility if needed
+current_date <- as.POSIXct(Sys.Date(), tz = "GMT")
+one_year_ago <- current_date - (365 * 24 * 60 * 60) # Subtract seconds equivalent to one year
+
+# Filter records from the last year by converting ReportDate to POSIXct if not already
+df$ReportDate <- as.POSIXct(df$ReportDate, tz = "GMT")
+last_year_data <- df[df$ReportDate >= one_year_ago, ]
+
+# Filter records from the last four years
+four_years_ago <- current_date - (4 * 365 * 24 * 60 * 60)
+four_years_data <- df[df$ReportDate >= four_years_ago, ]
+
+# Select only the necessary columns to ensure consistency
+last_year_data <- last_year_data[, c("ReportDate", "Region", "StorageAmount")]
+four_years_data <- four_years_data[, c("ReportDate", "Region", "StorageAmount")]
+
+# Define the structure for min_max_data with the same columns
+min_max_data <- data.frame(ReportDate = as.POSIXct(character()), Region = character(), StorageAmount = numeric(), stringsAsFactors = FALSE)
+
+# Function to calculate min and max for each region based on ReportDate over the last four years
+calculate_min_max <- function(data, four_years_ago, current_date) {
+  regions <- unique(data$Region)
+  min_max_list <- lapply(regions, function(region) {
+    region_data <- data[data$Region == region, ]
+    min_storage <- min(region_data$StorageAmount, na.rm = TRUE)
+    max_storage <- max(region_data$StorageAmount, na.rm = TRUE)
+    
+    data.frame(
+      ReportDate = c(four_years_ago, current_date),
+      Region = rep(region, 2),
+      StorageAmount = c(min_storage, max_storage),
+      stringsAsFactors = FALSE
+    )
+  })
+  
+  min_max_data <- do.call(rbind, min_max_list)
+  return(min_max_data)
+}
+
+# Call the function on the last 4 years data
+min_max_data <- calculate_min_max(four_years_data, four_years_ago, current_date)
+
+# Ensure both data sets have the same structure before combining
+if (all(names(last_year_data) == names(min_max_data))) {
+  StorageReport <- rbind(last_year_data, min_max_data)
+} else {
+  stop("Datasets have different structures and cannot be combined.")
+}
+
+# Print out the check
+print(head(StorageReport))

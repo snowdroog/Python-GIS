@@ -1,0 +1,55 @@
+# Assuming the data frame is loaded as df
+df <- GREENSCAPE_STORAGE_REPORT
+
+# Ensure Sys.Date is being called correctly and convert to POSIXct for compatibility if needed
+current_date <- as.POSIXct(Sys.Date(), tz = "GMT")
+four_years_ago <- current_date - (4 * 365 * 24 * 60 * 60)
+
+# Convert ReportDate to POSIXct if not already
+df$ReportDate <- as.POSIXct(df$ReportDate, tz = "GMT")
+
+# Filter records from the last four years
+data <- df[df$ReportDate >= four_years_ago, ]
+
+# Select only the necessary columns to ensure consistency
+data <- data[, c("ReportDate", "Region", "StorageAmount")]
+
+# Initialize the structure for min_max_data with the same columns
+min_max_data <- data.frame(
+  ReportDate = as.POSIXct(character()),
+  Region = character(),
+  StorageAmount_Min = numeric(),
+  StorageAmount_Max = numeric(),
+  stringsAsFactors = FALSE
+)
+
+# Calculate rolling min and max for each ReportDate and region over the past year
+for (i in 1:nrow(data)) {
+  date <- data$ReportDate[i]
+  region <- data$Region[i]
+  start_date <- date - (365 * 24 * 60 * 60)
+  subset_data <- data[data$ReportDate >= start_date & data$ReportDate <= date & data$Region == region, ]
+  
+  if (nrow(subset_data) > 0) {
+    min_storage <- min(subset_data$StorageAmount, na.rm = TRUE)
+    max_storage <- max(subset_data$StorageAmount, na.rm = TRUE)
+    
+    min_max_data <- rbind(min_max_data, data.frame(
+      ReportDate = date,
+      Region = region,
+      StorageAmount_Min = min_storage,
+      StorageAmount_Max = max_storage,
+      stringsAsFactors = FALSE
+    ))
+  }
+}
+
+# Ensure both data sets have the same structure before combining
+if (identical(names(data), names(min_max_data)[1:2])) {
+  combined_data <- merge(data, min_max_data, by = c("ReportDate", "Region"), all.x = TRUE)
+} else {
+  stop("Datasets have different structures and cannot be combined.")
+}
+
+# Print out the check
+print(head(combined_data))

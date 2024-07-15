@@ -1,0 +1,1 @@
+If([Date] >= Min([min_date]) OVER (Intersect([HistoricProduction])) AND [Date] <= Max([max_date]) OVER (Intersect([HistoricProduction])), "In Range", "Out of Range")

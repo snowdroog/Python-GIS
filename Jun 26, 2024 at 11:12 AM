@@ -1,0 +1,25 @@
+from Spotfire.Dxp.Data import DataPropertyClass, DataProperty, RowSelection
+
+# Get the data table
+data_table = Document.Data.Tables["IBTRACS_DISSOLVE_1950_WITH_PLATFORM_STATUS_AND_DATE_RANGES"]
+
+# Initialize variables to store min and max dates
+min_date = None
+max_date = None
+
+# Iterate over the rows in the data table
+for row in data_table.GetRows(RowSelection.Selected):
+    date_min_value = row[data_table.Columns["DATE_MIN"]]
+    date_max_value = row[data_table.Columns["DATE_MAX"]]
+
+    # Update min_date and max_date
+    if date_min_value is not None:
+        if min_date is None or date_min_value < min_date:
+            min_date = date_min_value
+    if date_max_value is not None:
+        if max_date is None or date_max_value > max_date:
+            max_date = date_max_value
+
+# Set the document properties
+Document.Properties["StormDateMin"] = min_date
+Document.Properties["StormDateMax"] = max_date

@@ -1,0 +1,56 @@
+from Spotfire.Dxp.Application import DocumentProperties
+from Spotfire.Dxp.Data import DataPropertyClass
+from Spotfire.Dxp.Application.Visuals import TablePlot
+from System import DateTime
+
+# Get the active page
+activePage = Application.Document.ActivePageReference
+
+# Find the TablePlot visualization (assumes there is one on the active page)
+tablePlot = None
+for vis in activePage.Visuals:
+    if vis.TypeId == TablePlot.TypeId:
+        tablePlot = vis.As[TablePlot]()
+        break
+
+if tablePlot is None:
+    raise Exception("No TablePlot found on the active page.")
+
+# Get the data table
+dataTable = tablePlot.Data.DataTableReference
+
+# Ensure the correct data table is selected
+if dataTable.Name != "tableA":
+    raise Exception("Expected data table 'tableA', but found '{}'".format(dataTable.Name))
+
+# Get the marking
+marking = Application.GetService[DataPropertyClass]().GetDataProperty("StormSelector").As[Spotfire.Dxp.Application.Marking]()
+
+# Retrieve marked rows
+markedRows = marking.GetSelection(dataTable).GetSelection()
+
+if len(markedRows) == 0:
+    raise Exception("No rows are marked with 'StormSelector' marking.")
+
+# Initialize variables to hold the minimum and maximum dates
+min_start_date = DateTime.MaxValue
+max_end_date = DateTime.MinValue
+
+# Retrieve the values from the start and end columns
+start_column = dataTable.Columns["start"]
+end_column = dataTable.Columns["end"]
+
+for row in markedRows:
+    start_date = dataTable[row][start_column.Index]
+    end_date = dataTable[row][end_column.Index]
+    
+    if start_date < min_start_date:
+        min_start_date = start_date
+    if end_date > max_end_date:
+        max_end_date = end_date
+
+# Set the document properties
+Document.Properties["min_start_date"] = str(min_start_date)
+Document.Properties["max_end_date"] = str(max_end_date)
+
+print("The highest and lowest dates from the 'start' and 'end' columns have been stored in document properties.")

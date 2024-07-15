@@ -1,0 +1,19 @@
+# Load input tables
+IBTRACS <- SpotfireDataTable("IBTRACS")
+GENSCAPE_PIPEFLOW_REPORTS <- SpotfireDataTable("GENSCAPE_PIPEFLOW_REPORTS")
+
+# Extract DATE_MIN and DATE_MAX from IBTRACS and convert to Date objects
+DATE_MIN <- as.Date(IBTRACS$DATE_MIN, format="%Y-%m-%d")
+DATE_MAX <- as.Date(IBTRACS$DATE_MAX, format="%Y-%m-%d")
+
+# Calculate the overall minimum and maximum dates across all rows
+overall_DATE_MIN <- min(DATE_MIN, na.rm = TRUE)
+overall_DATE_MAX <- max(DATE_MAX, na.rm = TRUE)
+
+# Filter GENSCAPE_PIPEFLOW_REPORTS based on the calculated overall min and max dates
+FocusedPlatformProduction <- GENSCAPE_PIPEFLOW_REPORTS[
+  as.Date(GENSCAPE_PIPEFLOW_REPORTS$DATE, format="%Y-%m-%d") >= overall_DATE_MIN &
+  as.Date(GENSCAPE_PIPEFLOW_REPORTS$DATE, format="%Y-%m-%d") <= overall_DATE_MAX, ]
+
+# Output the filtered data to a new table
+SpotfireOutputTable("FocusedPlatformProduction", FocusedPlatformProduction)

@@ -1,0 +1,51 @@
+from Spotfire.Dxp.Data import RowSelection, IndexSet
+from Spotfire.Dxp.Application.Visuals import TablePlot
+
+# Function to be called by the button to add a new row to the OutageScenarios table
+def addOutageScenario(sender, args):
+    # Get the document properties
+    platformShutdownDate = Document.Properties["PlatformShutdownDate"]
+    platformShutdownPeriod = Document.Properties["PlatformShutdownPeriod"]
+    platformOfflineDate = Document.Properties["PlatformOfflineDate"]
+    platformOfflinePeriod = Document.Properties["PlatformOfflinePeriod"]
+    platformRestartDate = Document.Properties["PlatformRestartDate"]
+    platformRestartPeriod = Document.Properties["PlatformRestartPeriod"]
+    platformBackOnlineDate = Document.Properties["PlatformBackOnlineDate"]
+    
+    refineryShutdownDate = Document.Properties["RefineryShutdownDate"]
+    refineryShutdownPeriod = Document.Properties["RefineryShutdownPeriod"]
+    refineryOfflineDate = Document.Properties["RefineryOfflineDate"]
+    refineryOfflinePeriod = Document.Properties["RefineryOfflinePeriod"]
+    refineryRestartDate = Document.Properties["RefineryRestartDate"]
+    refineryRestartPeriod = Document.Properties["RefineryRestartPeriod"]
+    refineryBackOnlineDate = Document.Properties["RefineryBackOnlineDate"]
+
+    # Get the data table where the data needs to be added
+    dataTable = Document.Data.Tables["OutageScenarios"]
+    
+    # Create a new row in the data table
+    newRow = dataTable.CreateEmptyRow()
+    newRow["PlatformShutdownDate"] = platformShutdownDate
+    newRow["PlatformShutdownPeriod"] = platformShutdownPeriod
+    newRow["PlatformOfflineDate"] = platformOfflineDate
+    newRow["PlatformOfflinePeriod"] = platformOfflinePeriod
+    newRow["PlatformRestartDate"] = platformRestartDate
+    newRow["PlatformRestartPeriod"] = platformRestartPeriod
+    newRow["PlatformBackOnlineDate"] = platformBackOnlineDate
+
+    newRow["RefineryShutdownDate"] = refineryShutdownDate
+    newRow["RefineryShutdownPeriod"] = refineryShutdownPeriod
+    newRow["RefineryOfflineDate"] = refineryOfflineDate
+    newRow["RefineryOfflinePeriod"] = refineryOfflinePeriod
+    newRow["RefineryRestartDate"] = refineryRestartDate
+    newRow["RefineryRestartPeriod"] = refineryRestartPeriod
+    newRow["RefineryBackOnlineDate"] = refineryBackOnlineDate
+
+    # Commit the new row to the data table
+    dataTable.AddRow(newRow)
+    
+    # Optionally, you might need to update visuals or force the application to refresh the table plot
+    # tablePlot = findTablePlot('OutageScenarios')
+    # tablePlot.Data.DataTableReference = dataTable
+
+# Link this function to a button for execution in the Spotfire Analyst client

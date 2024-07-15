@@ -1,0 +1,55 @@
+# Load the data, assuming 'GENSCAPE_STORAGE_REPORT' is already loaded as a data frame.
+# df <- GENSCAPE_STORAGE_REPORT
+
+# Current date to determine the time periods
+current_date <- Sys.Date()
+
+# Filter records from the last year
+last_year_data <- subset(df, ReportDate >= (current_date - 365))
+
+# Function to calculate min/max over 4 years for each month and region
+calculate_min_max <- function(data) {
+  results <- data.frame()
+  for (year_offset in 0:3) {
+    start_date <- as.Date(format(current_date - 365 * year_offset, "%Y-01-01"))
+    end_date <- as.Date(format(current_date - 365 * year_offset, "%Y-12-31"))
+    
+    # Subset data for each year
+    yearly_data <- subset(data, ReportDate >= start_date & ReportDate <= end_date)
+    
+    # Aggregate data by month and region
+    for (month in 1:12) {
+      month_data <- subset(yearly_data, format(ReportDate, "%m") == sprintf("%02d", month))
+      if (nrow(month_data) > 0) {
+        for (region in unique(month_data$Region)) {
+          region_data <- subset(month_data, Region == region)
+          min_storage <- min(region_data$StorageAmount)
+          max_storage <- max(region_data$StorageAmount)
+          
+          # Append results
+          results <- rbind(results, data.frame(
+            ReportDate = as.Date(paste(year(yearly_data$ReportDate[1]), month, "01", sep = "-")),
+            Region = paste(region, "4YearMin", sep = "_"),
+            StorageAmount = min_storage
+          ))
+          
+          results <- rbind(results, data.frame(
+            ReportDate = as.Date(paste(year(yearly_data$ReportDate[1]), month, "01", sep = "-")),
+            Region = paste(region, "4YearMax", sep = "_"),
+            StorageAmount = max_storage
+          ))
+        }
+      }
+    }
+  }
+  results
+}
+
+# Call the function on the original dataset
+min_max_data <- calculate_min_max(df)
+
+# Combine data from the last year and the calculated min/max values
+StorageReport <- rbind(last_year_data, min_max_data)
+
+# Print output to check
+print(head(StorageReport))

@@ -1,0 +1,17 @@
+# Define the input tables
+ibtracs <- data.frame(IBTRACS)
+genscape_pipeflow_reports <- data.frame(GENSCAPE_PIPEFLOW_REPORTS)
+
+# Extract the DATE_MIN and DATE_MAX values from IBTRACS
+date_min <- min(ibtracs$DATE_MIN, na.rm = TRUE)
+date_max <- max(ibtracs$DATE_MAX, na.rm = TRUE)
+
+# Filter the GENSCAPE_PIPEFLOW_REPORTS based on the DATE_MIN and DATE_MAX
+filtered_production <- genscape_pipeflow_reports[
+  genscape_pipeflow_reports$DATE >= date_min & genscape_pipeflow_reports$DATE <= date_max, ]
+
+# Define the output table
+FocusedPlatformProduction <- filtered_production
+
+# Display the output table (use in Spotfire context to visualize the output)
+FocusedPlatformProduction

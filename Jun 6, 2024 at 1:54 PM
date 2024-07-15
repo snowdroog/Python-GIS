@@ -1,0 +1,63 @@
+# Convert date strings to Date type and periods to integers
+RefineryShutdownDate <- as.Date(RefineryShutdownDate)
+RefineryRestartDate <- as.Date(RefineryRestartDate)
+RefineryOfflineDate <- as.Date(RefineryOfflineDate)
+RefineryOnlineDate <- as.Date(RefineryOnlineDate)
+RefineryShutdownPeriod <- as.integer(RefineryShutdownPeriod)
+RefineryRestartPeriod <- as.integer(RefineryRestartPeriod)
+
+# Load and prepare the prodforecast data frame
+refForecast$Prod_Date <- as.Date(refForecast$Prod_Date)
+
+# Extend the forecast period to include two days before and after the outage
+extended_start <- RefineryShutdownDate - 2
+extended_end <- RefineryRestartDate + 2
+precise_start <- RefineryShutdownDate
+precise_end <- RefineryRestartDate
+
+RefineryScenarioForecast <- subset(refForecast, Prod_Date >= extended_start & Prod_Date <= extended_end)
+
+# Initialize AdjustedUnitCapacity with original UnitCapacity
+RefineryScenarioForecast$AdjustedUnitCapacity <- RefineryScenarioForecast$UnitCapacity
+
+# Apply UnitCapacity changes during the shutdown and restart periods
+if (any(RefineryScenarioForecast$Prod_Date >= RefineryShutdownDate) & any(RefineryScenarioForecast$Prod_Date <= RefineryRestartDate)) {
+    for (i in 1:nrow(RefineryScenarioForecast)) {
+        if (RefineryScenarioForecast$Prod_Date[i] >= RefineryShutdownDate & RefineryScenarioForecast$Prod_Date[i] <= RefineryRestartDate) {
+            RefineryScenarioForecast$AdjustedUnitCapacity[i] <- RefineryScenarioForecast$UnitCapacity[i] - (RefineryScenarioForecast$UnitCapacity[i] * RefineryShutdownPeriod / (RefineryShutdownPeriod + RefineryRestartPeriod))
+        }
+    }
+}
+
+# Loop through each forecast period to adjust the yields
+for (i in 1:nrow(RefineryScenarioForecast)) {
+    if (RefineryScenarioForecast$Prod_Date[i] >= RefineryShutdownDate) {
+        day_from_shutdown_start <- as.integer(RefineryScenarioForecast$Prod_Date[i] - RefineryShutdownDate)
+        daily_decrease <- RefineryScenarioForecast$GasolineYield * day_from_shutdown_start / RefineryShutdownPeriod
+        
+        if (daily_decrease > 0) {
+            RefineryScenarioForecast$AdjustedDistillateYield[i] <- RefineryScenarioForecast$DistillateYield - daily_decrease
+        } else {
+            RefineryScenarioForecast$AdjustedDistillateYield[i] <- RefineryScenarioForecast$DistillateYield
+        }
+    }
+    
+    if (RefineryScenarioForecast$Prod_Date[i] >= RefineryRestartDate) {
+        day_from_restart_start <- as.integer(RefineryScenarioForecast$Prod_Date[i] - RefineryRestartDate)
+        daily_decrease <- RefineryScenarioForecast$GasolineYield * day_from_restart_start / RefineryRestartPeriod
+        
+        if (daily_decrease > 0) {
+            RefineryScenarioForecast$AdjustedDistillateYield[i] <- RefineryScenarioForecast$DistillateYield - daily_decrease
+        } else {
+            RefineryScenarioForecast$AdjustedDistillateYield[i] <- RefineryScenarioForecast$DistillateYield
+        }
+    }
+}
+
+# Adjust GasolineYield, JetYield, and DistillateYield proportionally again after restart
+RefineryScenarioForecast$AdjustedDistillateYield <- ifelse(RefineryScenarioForecast$Prod_Date >= RefineryRestartDate,
+    RefineryScenarioForecast$DistillateYield + (RefineryScenarioForecast$DistillateYield * RefineryRestartPeriod / (RefineryShutdownPeriod + RefineryRestartPeriod)),
+    RefineryScenarioForecast$DistillateYield)
+
+# Format prod date as text in the format "yyyy-mm-dd"
+RefineryScenarioForecast$Prod_Date <- format(RefineryScenarioForecast$Prod_Date, "%Y-%m-%d")

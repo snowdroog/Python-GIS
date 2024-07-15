@@ -1,0 +1,54 @@
+from Spotfire.Dxp.Application.Visuals import TablePlot
+from Spotfire.Dxp.Data import DataPropertyClass
+from Spotfire.Dxp.Data import IndexSet, DataTable
+
+def update_platform_list(selection, scenario_property, scenario_properties):
+    # Assuming 'selection' is supposed to be an IndexSet
+    if not isinstance(selection, IndexSet):
+        raise TypeError("Expected selection to be IndexSet, got {}".format(type(selection).__name__))
+    
+    existing_platforms = Document.Properties[scenario_property].split(',')
+    existing_platforms = [p.strip() for p in existing_platforms if p.strip()]
+
+    # Fetch rows based on IndexSet
+    data_table = Document.Data.Tables["PLATFORM LOCATIONS"]
+    new_platforms = [row.Cells["PlatformName"].Value for row in data_table.GetRows(selection)]
+
+    # Remove duplicates from other scenarios
+    for prop in scenario_properties:
+        if prop != scenario_property:
+            other_platforms = Document.Properties[prop].split(',')
+            other_platforms = [p.strip() for p in other_platforms if p.strip()]
+            new_platforms = [p for p in new_platforms if p not in other_platforms]
+            Document.Properties[prop] = ','.join([p for p in other_platforms if p not in new_platforms])
+
+    # Update the current scenario
+    updated_platforms = list(set(existing_platforms + new_platforms))
+    Document.Properties[scenario_property] = ','.join(updated_platforms)
+
+# List of document properties for the scenarios
+scenario_properties = [
+    "PlatformListOutageScenario1",
+    "PlatformListOutageScenario2",
+    "PlatformListOutageScenario3"
+]
+
+# Get the active marking selections
+marking1 = Document.ActiveMarkingSelectionReference.GetSelection("PlatformsScenario1")
+marking2 = Document.ActiveMarkingSelectionReference.GetSelection("PlatformsScenario2")
+marking3 = Document.ActiveMarkingSelectionReference.GetSelection("PlatformsScenario3")
+
+# Convert the selections to IndexSets
+platform_selection1 = marking1.AsIndexSet()
+platform_selection2 = marking2.AsIndexSet()
+platform_selection3 = marking3.AsIndexSet()
+
+# Check if any platforms are selected and update the respective scenario property
+if not platform_selection1.IsEmpty:
+    update_platform_list(platform_selection1, "PlatformListOutageScenario1", scenario_properties)
+
+if not platform_selection2.IsEmpty:
+    update_platform_list(platform_selection2, "PlatformListOutageScenario2", scenario_properties)
+
+if not platform_selection3.IsEmpty:
+    update_platform_list(platform_selection3, "PlatformListOutageScenario3", scenario_properties)

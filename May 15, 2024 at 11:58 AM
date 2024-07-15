@@ -1,0 +1,41 @@
+class DocumentTableManager:
+    def __init__(self):
+        # Assuming 'document_properties' holds the values fetched from an actual document's properties
+        self.document_properties = {
+            'PlatformShutdownDate': '2024-05-15',
+            'PlatformShutdownPeriod': '2 days',
+            'PlatformOfflineDate': '2024-05-17',
+            'PlatformOfflinePeriod': '3 days',
+            'PlatformRestartDate': '2024-05-20',
+            'PlatformRestartPeriod': '1 day',
+            'PlatformBackOnlineDate': '2024-05-21',
+            'RefineryShutdownDate': '2024-05-15',
+            'RefineryShutdownPeriod': '2 days',
+            'RefineryOfflineDate': '2024-05-17',
+            'RefineryOfflinePeriod': '3 days',
+            'RefineryRestartDate': '2024-05-20',
+            'RefineryRestartPeriod': '1 day',
+            'RefineryBackOnlineDate': '2024-05-21'
+        }
+        # Assuming 'outage_scenarios' is a list representing the table where we add new rows
+        self.outage_scenarios = []
+
+    def add_outage_scenario(self):
+        # Create a new row with current properties for both Platform and Refinery sets
+        new_row = {key: self.document_properties[key] for key in self.document_properties}
+        self.outage_scenarios.append(new_row)
+
+    def trigger_button(self):
+        # Simulate a button press that triggers adding a new row to the outage scenarios table
+        self.add_outage_scenario()
+        print("New outage scenario added successfully.")
+        self.print_table()
+
+    def print_table(self):
+        # Print the current table state to show the added rows
+        for index, scenario in enumerate(self.outage_scenarios):
+            print(f"Row {index + 1}: {scenario}")
+
+# Example usage
+manager = DocumentTableManager()
+manager.trigger_button()

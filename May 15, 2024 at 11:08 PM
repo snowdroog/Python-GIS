@@ -1,0 +1,77 @@
+# Assuming the data frame is loaded as df
+df <- GNSCAPE_STORAGE_REPORT
+
+# Ensure Sys.Date is being called correctly and convert to POSIXct for compatibility if needed
+current_date <- as.POSIXct(Sys.Date(), tz = "GMT")
+
+# Calculate the date one year ago and four years ago in POSIXct format
+one_year_ago <- current_date - (365 * 24 * 60 * 60) # Subtract seconds equivalent to one year
+four_years_ago <- current_date - (4 * 365 * 24 * 60 * 60) # Subtract seconds equivalent to four years
+
+# Filter records from the last year by converting ReportDate to POSIXct if not already
+last_year_data <- df[as.POSIXct(df$ReportDate, tz = "GMT") >= one_year_ago, ]
+
+# Filter records from the last four years by converting ReportDate to POSIXct if not already
+four_years_data <- df[as.POSIXct(df$ReportDate, tz = "GMT") >= four_years_ago, ]
+
+# Select only the necessary columns to ensure consistency
+last_year_data <- last_year_data[c("ReportDate", "Region", "StorageAmount")]
+four_years_data <- four_years_data[c("ReportDate", "Region", "StorageAmount")]
+
+# Define the structure for min_max_data with the same columns
+min_max_data <- data.frame(ReportDate = as.POSIXct(character()), Region = character(), StorageAmount = numeric(), stringsAsFactors = FALSE)
+
+# Function to calculate min and max for each month per region over the last four years
+calculate_min_max <- function(data) {
+    min_max_data <- data.frame(
+        ReportDate = as.POSIXct(character()),
+        Region = character(),
+        StorageAmount = numeric(),
+        stringsAsFactors = FALSE
+    )
+
+    # Loop through each month and region
+    for (month in 1:12) {
+        for (region in unique(data$Region)) {
+            month_data <- data[
+                format(as.POSIXct(data$ReportDate, tz = "GMT"), "%m") == sprintf("%02d", month) & 
+                data$Region == region, 
+            ]
+            
+            if (nrow(month_data) > 0) {
+                min_storage <- min(month_data$StorageAmount, na.rm = TRUE)
+                max_storage <- max(month_data$StorageAmount, na.rm = TRUE)
+                
+                # Append results with _4yearMin and _4yearMax to the region names
+                min_max_data <- rbind(min_max_data, data.frame(
+                    ReportDate = as.POSIXct(paste0(format(Sys.Date(), "%Y"), "-", sprintf("%02d", month), "-01"), tz = "GMT"), 
+                    Region = paste0(region, "_4yearMin"), 
+                    StorageAmount = min_storage, 
+                    stringsAsFactors = FALSE
+                ))
+                
+                min_max_data <- rbind(min_max_data, data.frame(
+                    ReportDate = as.POSIXct(paste0(format(Sys.Date(), "%Y"), "-", sprintf("%02d", month), "-01"), tz = "GMT"), 
+                    Region = paste0(region, "_4yearMax"), 
+                    StorageAmount = max_storage, 
+                    stringsAsFactors = FALSE
+                ))
+            }
+        }
+    }
+
+    return(min_max_data)
+}
+
+# Call the function on the last 4 years data
+min_max_data <- calculate_min_max(four_years_data)
+
+# Ensure both data sets have the same structure before combining
+if (all(names(last_year_data) == names(min_max_data))) {
+    StorageReport <- rbind(last_year_data, min_max_data)
+} else {
+    stop("Datasets have different structures and cannot be combined.")
+}
+
+# Print out the check
+print(head(StorageReport))

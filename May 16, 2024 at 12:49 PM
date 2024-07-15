@@ -1,0 +1,52 @@
+from Spotfire.Dxp.Data import DataValueCursor
+from Spotfire.Dxp.Data import Row
+
+# Function to be called by the button to add a new row to the OutageScenarios table
+def addOutageScenario(sender, args):
+    # Get the document properties
+    platformShutdownDate = Document.Properties["PlatformShutdownDate"]
+    platformShutdownPeriod = Document.Properties["PlatformShutdownPeriod"]
+    platformOfflineDate = Document.Properties["PlatformOfflineDate"]
+    platformOfflinePeriod = Document.Properties["PlatformOfflinePeriod"]
+    platformRestartDate = Document.Properties["PlatformRestartDate"]
+    platformRestartPeriod = Document.Properties["PlatformRestartPeriod"]
+    platformBackOnlineDate = Document.Properties["PlatformBackOnlineDate"]
+    
+    refineryShutdownDate = Document.Properties["RefineryShutdownDate"]
+    refineryShutdownPeriod = Document.Properties["RefineryShutdownPeriod"]
+    refineryOfflineDate = Document.Properties["RefineryOfflineDate"]
+    refineryOfflinePeriod = Document.Properties["RefineryOfflinePeriod"]
+    refineryRestartDate = Document.Properties["RefineryRestartDate"]
+    refineryRestartPeriod = Document.Properties["RefineryRestartPeriod"]
+    refineryBackOnlineDate = Document.Properties["RefineryBackOnlineDate"]
+
+    # Get the data table where the data needs to be added
+    dataTable = Document.Data.Tables["OutageScenarios"]
+
+    # Create cursors for each column
+    columns = ["PlatformShutdownDate", "PlatformShutdownPeriod", "PlatformOfflineDate", "PlatformOfflinePeriod", "PlatformRestartDate", "PlatformRestartPeriod", "PlatformBackOnlineDate",
+               "RefineryShutdownDate", "RefineryShutdownPeriod", "RefineryOfflineDate", "RefineryOfflinePeriod", "RefineryRestartDate", "RefineryRestartPeriod", "RefineryBackOnlineDate"]
+    
+    cursors = [DataValueCursor.CreateFormatted(dataTable.Columns[column]) for column in columns]
+    
+    # Add a new row with the document properties values
+    newRow = dataTable.AddRow()
+
+    cursors[0].SetValue(newRow, platformShutdownDate)
+    cursors[1].SetValue(newRow, platformShutdownPeriod)
+    cursors[2].SetValue(newRow, platformOfflineDate)
+    cursors[3].SetValue(newRow, platformOfflinePeriod)
+    cursors[4].SetValue(newRow, platformRestartDate)
+    cursors[5].SetValue(newRow, platformRestartPeriod)
+    cursors[6].SetValue(newRow, platformBackOnlineDate)
+    
+    cursors[7].SetValue(newRow, refineryShutdownDate)
+    cursors[8].SetValue(newRow, refineryShutdownPeriod)
+    cursors[9].SetValue(newRow, refineryOfflineDate)
+    cursors[10].SetValue(newRow, refineryOfflinePeriod)
+    cursors[11].SetValue(newRow, refineryRestartDate)
+    cursors[12].SetValue(newRow, refineryRestartPeriod)
+    cursors[13].SetValue(newRow, refineryBackOnlineDate)
+
+# Link this function to a button for execution in the Spotfire Analyst client
+addOutageScenario(None, None)

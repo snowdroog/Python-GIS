@@ -1,0 +1,75 @@
+# Assuming the data frame is loaded as df
+df <- GENSACPE_STORAGE_REPORT
+
+# Ensure Sys.Date is being called correctly and convert to POSIXct for compatibility if needed
+current_date <- as.POSIXct(Sys.Date(), tz = "GMT") # Using GMT for consistency, adjust timezone as needed
+
+# Calculate the date four years ago in POSIXct format
+four_years_ago <- current_date - (4 * 365 * 24 * 60 * 60) # Subtract seconds equivalent to four years
+
+# Filter records from the last four years by converting ReportDate to POSIXct, if not already
+four_years_data <- df[as.POSIXct(df$ReportDate, tz = "GMT") >= four_years_ago, ]
+
+# Ensure necessary columns are present, ensure consistency
+four_years_data <- four_years_data[, c("ReportDate", "Region", "StorageAmount")]
+
+# Define the structure for min_max_data with the same columns
+min_max_data <- data.frame(ReportDate = as.POSIXct(character()), Region = character(), StorageAmount = numeric(), stringsAsFactors = FALSE)
+
+# Function to fill min_max data
+calculate_min_max <- function(data) {
+  # Create a sequence of months from four years ago to the current date
+  months <- seq(from = as.Date(format(four_years_ago, "%Y-%m-01")), to = as.Date(format(current_date, "%Y-%m-01")), by = "month")
+  
+  # Iterate through each month and region to calculate min and max storage amounts
+  for (month in months) {
+    month_start <- as.POSIXct(paste0(month, "-01"), tz = "GMT")
+    month_end <- as.POSIXct(paste0(format(month, "%Y-%m"), "-", as.integer(format(month, "%d")) + 1), tz = "GMT") - 1
+    
+    month_data <- data[as.POSIXct(data$ReportDate, tz = "GMT") >= month_start & as.POSIXct(data$ReportDate, tz = "GMT") <= month_end, ]
+    
+    if (nrow(month_data) > 0) {
+      for (region in unique(month_data$Region)) {
+        region_data <- month_data[month_data$Region == region, ]
+        max_storage <- max(region_data$StorageAmount, na.rm = TRUE)
+        min_storage <- min(region_data$StorageAmount, na.rm = TRUE)
+        min_max_data <- rbind(
+          min_max_data,
+          data.frame(
+            ReportDate = month_start,
+            Region = paste(region, "YearMin", sep = "-"),
+            StorageAmount = min_storage,
+            stringsAsFactors = FALSE
+          ),
+          data.frame(
+            ReportDate = month_start,
+            Region = paste(region, "YearMax", sep = "-"),
+            StorageAmount = max_storage,
+            stringsAsFactors = FALSE
+          )
+        )
+      }
+    }
+  }
+
+  return(min_max_data)
+}
+
+# Call the function on the last 4 years data
+min_max_data <- calculate_min_max(four_years_data)
+
+# Ensure the data frame for the last year is present and has necessary columns
+one_year_ago <- current_date - (365 * 24 * 60 * 60) # Subtract seconds equivalent to one year
+last_year_data <- df[as.POSIXct(df$ReportDate, tz = "GMT") >= one_year_ago, ]
+last_year_data <- last_year_data[, c("ReportDate", "Region", "StorageAmount")]
+
+# Ensure both data sets have the same structure before combining
+if (!all(names(last_year_data) == names(min_max_data))) {
+  stop("Data frames have different structures and cannot be combined.")
+}
+
+# Combine data from the last year and the calculated min/max values
+StorageReport <- rbind(last_year_data, min_max_data)
+
+# Print out the check
+print(head(StorageReport))
