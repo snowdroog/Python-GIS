@@ -1,0 +1,42 @@
+from Spotfire.Dxp.Application.Visuals import VisualContent
+from System.Collections.Generic import List
+
+def get_marked_items(marking_name):
+    marking = Document.ActiveMarkingSelectionReference.GetMarking(marking_name)
+    if not marking:
+        print "No marking found with the name: " + marking_name
+        return set()
+    data_table = Document.Data.Tables["PLATFORM_LOCATIONS"]
+    column_name = "PlatformName"
+    rows = data_table.GetRows(marking.GetSelection(data_table).AsIndexSet(), List[str]([column_name]))
+    marked_items = set()
+    while rows.MoveNext():
+        row = rows.Current
+        marked_items.add(row[column_name])
+    if not marked_items:
+        print "No items marked in " + marking_name
+    else:
+        print "Marked items in " + marking_name + ": " + str(marked_items)
+    return marked_items
+
+def update_document_properties(doc_properties, new_values, prop_to_update):
+    print "Updating " + prop_to_update + " with " + str(new_values)
+    doc_properties[prop_to_update] = ';'.join(new_values)
+    
+    all_props = ['PlatformListOutageScenario1', 'PlatformListOutageScenario2', 'PlatformListOutageScenario3']
+    for prop in all_props:
+        if prop != prop_to_update:
+            existing_values = set(doc_properties[prop].split(';'))
+            updated_values = existing_values - new_values
+            doc_properties[prop] = ';'.join(updated_values)
+            print "Updated " + prop + ": " + str(updated_values)
+
+def marking_changed_scenario(doc_property_name, marking_name):
+    print "Triggered marking_changed_scenario for " + marking_name
+    new_marked_items = get_marked_items(marking_name)
+    update_document_properties(Document.Properties, new_marked_items, doc_property_name)
+
+# Attach these to the respective marking triggers
+# marking_changed_scenario('PlatformListOutageScenario1', 'PlatformsScenario1')
+# marking_changed_scenario('PlatformListOutageScenario2', 'PlatformsScenario2')
+# marking_changed_scenario('PlatformListOutageScenario3', 'PlatformsScenario3')
