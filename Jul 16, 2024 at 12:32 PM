@@ -1,0 +1,51 @@
+from Spotfire.Dxp.Application.Visuals import VisualContent
+from System.Collections.Generic import List
+
+# Function to get marked items from a specific marking
+def get_marked_items(marking_name):
+    marking = Document.ActiveMarkingSelectionReference.GetMarking(marking_name)
+    data_table = Document.Data.Tables["PLATFORM_LOCATIONS"]
+    column_name = "PlatformName"  # Hardcoded column name
+    rows = data_table.GetRows(marking.GetSelection(data_table).AsIndexSet(), List[str]([column_name]))
+    marked_items = set()
+    while rows.MoveNext():
+        row = rows.Current
+        marked_items.add(row[column_name])
+    print "Marked items in " + marking_name + ": " + str(marked_items)  # Debug statement
+    return marked_items
+
+# Function to update document properties and ensure no duplication
+def update_document_properties(doc_properties, new_values, prop_to_update):
+    print "Updating " + prop_to_update + " with " + str(new_values)  # Debug statement
+    doc_properties[prop_to_update] = ';'.join(new_values)
+    
+    all_values = set()
+    all_props = ['PlatformListOutageScenario1', 'PlatformListOutageScenario2', 'PlatformListOutageScenario3']
+    for prop in all_props:
+        if prop != prop_to_update:
+            all_values.update(doc_properties[prop].split(';'))
+    
+    for prop in all_props:
+        if prop != prop_to_update:
+            existing_values = set(doc_properties[prop].split(';'))
+            updated_values = existing_values - new_values
+            doc_properties[prop] = ';'.join(updated_values)
+            print "Updated " + prop + ": " + str(updated_values)  # Debug statement
+
+# Main script entry points for each marking change
+def marking_changed_scenario1(doc_property_name):
+    new_marked_items = get_marked_items("PlatformsScenario1")
+    update_document_properties(Document.Properties, new_marked_items, doc_property_name)
+
+def marking_changed_scenario2(doc_property_name):
+    new_marked_items = get_marked_items("PlatformsScenario2")
+    update_document_properties(Document.Properties, new_marked_items, doc_property_name)
+
+def marking_changed_scenario3(doc_property_name):
+    new_marked_items = get_marked_items("PlatformsScenario3")
+    update_document_properties(Document.Properties, new_marked_items, doc_property_name)
+
+# Example usage: Attach these functions to the respective marking triggers
+# marking_changed_scenario1('PlatformListOutageScenario1')
+# marking_changed_scenario2('PlatformListOutageScenario2')
+# marking_changed_scenario3('PlatformListOutageScenario3')
