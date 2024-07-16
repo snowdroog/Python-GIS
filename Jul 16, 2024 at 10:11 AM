@@ -1,0 +1,20 @@
+from Spotfire.Dxp.Application.Visuals import VisualContent
+from System.Collections.Generic import List
+
+# Function to get marked items from a specific marking
+def get_marked_items(marking, data_table, column_name):
+    rows = data_table.GetRows(marking.GetSelection(data_table).AsIndexSet(), List[str]([column_name]))
+    marked_items = set()
+    while rows.MoveNext():
+        row = rows.Current
+        marked_items.add(row[column_name])
+    return marked_items
+
+# Function to update document properties and ensure no duplication
+def update_document_properties(doc_properties, new_values, prop_to_update):
+    # Update the specified property
+    doc_properties[prop_to_update] = ';'.join(new_values)
+    
+    # Get current values from all properties and flatten into a single set
+    all_values = set()
+    all_props = ['PlatformListOutageScenario1', 'PlatformListOutage​⬤
