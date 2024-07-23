@@ -1,0 +1,27 @@
+# Load the Spotfire data into an R dataframe (assuming it is already loaded as spotfire_df)
+spotfire_df <- GENSCAPE_PIPEFLOW_REPORTS # Placeholder for actual Spotfire dataframe loading method
+
+# Get the latest year from the dataset
+latest_year <- max(as.numeric(format(as.Date(spotfire_df$Date, "%Y-%m-%d"), "%Y")))
+
+# Filter for unique regions with RankReal = 1.00 and extract AvgTop10 for those regions in the latest year
+unique_regions <- spotfire_df[spotfire_df$RankReal == 1.00 & 
+                              as.numeric(format(as.Date(spotfire_df$Date, "%Y-%m-%d"), "%Y")) == latest_year, 
+                              c("REGION", "AvgTop10")]
+
+# Remove duplicates based on REGION
+unique_regions <- unique_regions[!duplicated(unique_regions$REGION), ]
+
+# Create a sequence of dates from today for the next 365 days and format them
+dates <- seq.Date(Sys.Date(), by = "day", length.out = 365)
+formatted_dates <- format(dates, "%m/%d/%Y")
+
+# Expand the unique_regions data frame to include each formatted date
+prodForecast <- expand.grid(Date = formatted_dates, REGION = unique_regions$REGION)
+
+# Match the AvgTop10 values to the corresponding REGION in prodForecast
+prodForecast$Production <- unique_regions$AvgTop10[match(prodForecast$REGION, unique_regions$REGION)]
+
+# Verify the structure and first few rows of the prodForecast table
+str(prodForecast)
+head(prodForecast)
