@@ -1,0 +1,35 @@
+import clr
+from System.Collections.Generic import List
+from Spotfire.Dxp.Application.Visuals import VisualContent
+from Spotfire.Dxp.Data import IndexSet
+
+# Get the data table
+data_table = Document.Data.Tables["PLATFORM_LOCATIONS"]
+
+# Get the marking
+marking_name = "PlatformsScenario1"
+marking = Document.ActiveMarkingSelectionReference
+
+# Retrieve the rows marked in the "PlatformsScenario1" marking
+marked_rows = marking.GetSelection(data_table).AsIndexSet()
+
+# Initialize a list to store the platform names
+platform_names = List[str]()
+
+# Get the column 'PlatformName'
+platform_name_column = data_table.Columns["PlatformName"]
+
+# Iterate over marked rows and extract PlatformName values
+for row_index in marked_rows:
+    row = data_table.GetRow(row_index)
+    platform_name = row[platform_name_column]
+    platform_names.Add(str(platform_name))
+
+# Join the platform names into a comma-separated string
+platform_names_string = ", ".join(platform_names)
+
+# Set the document property 'PlatformListOutageScenario1' to the platform names string
+Document.Properties["PlatformListOutageScenario1"] = platform_names_string
+
+# Optional: Print confirmation message
+print(f"Document property 'PlatformListOutageScenario1' updated with: {platform_names_string}")
