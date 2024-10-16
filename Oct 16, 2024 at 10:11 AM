@@ -1,0 +1,23 @@
+<div style="background-color: #2c3e50; color: white; padding: 10px; width: 250px; font-family: Arial, sans-serif;">
+    <div style="font-size: 16px; font-weight: bold;">{{VesselName}}</div>
+    <div style="font-size: 12px; color: #bdc3c7;">{{TimeAgo}}</div>
+    <div style="margin-top: 10px;">
+        <span style="background-color: #e74c3c; color: white; padding: 2px 5px; border-radius: 3px;">{{Status}}</span>
+    </div>
+    <div style="margin-top: 10px;">
+        <div>Speed: {{Speed}} kn</div>
+        <div>Draught: {{Draught}} m</div>
+        <div>CII (YTD): {{CII}}</div>
+    </div>
+    <div style="margin-top: 10px;">
+        <div>{{ShipType}}</div>
+        <div>{{Company}}</div>
+    </div>
+    <div style="margin-top: 10px;">
+        <div>Destination (Raw): {{Destination}}</div>
+        <div>ETA (Raw): {{ETA}}</div>
+    </div>
+    <div style="margin-top: 10px;">
+        <img src="{{ArrowIcon}}" alt="Arrow" style="width: 20px;">
+    </div>
+</div>
