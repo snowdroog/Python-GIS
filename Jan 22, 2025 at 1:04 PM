@@ -1,0 +1,140 @@
+{\rtf1\ansi\ansicpg1252\cocoartf2821
+\cocoatextscaling1\cocoaplatform1{\fonttbl\f0\fnil\fcharset0 .SFUI-Regular;\f1\fswiss\fcharset0 Helvetica;\f2\fnil\fcharset0 .SFUI-Bold;
+}
+{\colortbl;\red255\green255\blue255;\red17\green17\blue17;}
+{\*\expandedcolortbl;;\cssrgb\c6700\c6700\c6700;}
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\sl250\slmult1\pardirnatural\partightenfactor0
+
+\f0\fs46 \cf2 Below are some common causes and troubleshooting steps you can try when receiving the \'93No valid client certificate found in the request\'94 message from ADFS on iOS (in this case from ArcGIS QuickCapture). This error typically indicates that the ADFS server is expecting certificate-based authentication but cannot find or use a valid client certificate on the device.
+\f1\fs24 \cf0 \
+\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\sl250\slmult1\pardirnatural\partightenfactor0
+
+\f2\b\fs56 \cf2 1. Verify that the correct client certificate is installed
+\f0\b0\fs46 \
+\pard\tqr\tx100\tx260\li260\fi-260\sl250\slmult1\sb240\partightenfactor0
+\cf2 	\'95	
+\f2\b Check the device keychain
+\f0\b0 : Ensure that the required client certificate (e.g., your corporate-issued certificate) is properly installed in the device\'92s certificate/keychain store.\
+	\'95	
+\f2\b MDM profile
+\f0\b0 : If this is a managed device, confirm the MDM profile pushes the correct certificate to the device and that it hasn\'92t expired or been revoked.\
+\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\sl250\slmult1\pardirnatural\partightenfactor0
+
+\f2\b \cf2 Why
+\f0\b0 : ADFS can be configured for client-certificate (smart card) authentication. If your certificate does not exist on the device or is invalid, ADFS will reject the request with \'93No valid client certificate found.\'94
+\f1\fs24 \cf0 \
+\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\sl250\slmult1\pardirnatural\partightenfactor0
+
+\f2\b\fs56 \cf2 2. Confirm that JavaScript is enabled for embedded webviews
+\f0\b0\fs46 \
+\pard\tqr\tx100\tx260\li260\fi-260\sl250\slmult1\sb240\partightenfactor0
+\cf2 	\'95	
+\f2\b Embedded WebView settings
+\f0\b0 : QuickCapture may present the login flow via an embedded WebView, which requires JavaScript for modern ADFS sign-in pages. Ensure that JavaScript is not disabled for the embedded browser component (some corporate MDM policies can disable or restrict JavaScript in managed browsers).\
+	\'95	
+\f2\b Device restrictions
+\f0\b0 : Check any iOS restriction profiles that might turn off or block JavaScript in certain apps or WebViews.\
+\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\sl250\slmult1\pardirnatural\partightenfactor0
+
+\f2\b \cf2 Why
+\f0\b0 : The sign-in page calls out that \'93JavaScript is required.\'94 Without JavaScript, ADFS might fail to proceed with certificate negotiations or interactive prompts.
+\f1\fs24 \cf0 \
+\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\sl250\slmult1\pardirnatural\partightenfactor0
+
+\f2\b\fs56 \cf2 3. Verify ADFS relying party trust and authentication policy
+\f0\b0\fs46 \
+\pard\tqr\tx100\tx260\li260\fi-260\sl250\slmult1\sb240\partightenfactor0
+\cf2 	\'95	
+\f2\b Relying party configuration
+\f0\b0 : Make sure the ArcGIS/QuickCapture application is registered correctly as a relying party in ADFS.\
+	\'95	
+\f2\b Authentication policies
+\f0\b0 : Confirm that the ADFS authentication policy is set to allow certificate-based auth or integrated Windows auth as required. If the policy mandates certificates at an additional endpoint (e.g., /adfs/ls/), the device must present a valid cert or fallback to another authentication method if configured.\
+\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\sl250\slmult1\pardirnatural\partightenfactor0
+
+\f2\b \cf2 Why
+\f0\b0 : If your organization\'92s ADFS enforces strict certificate-based login for certain relying parties\'97especially on managed iOS devices\'97then any mismatch between the app\'92s request and the ADFS policy will cause certificate-related failures.
+\f1\fs24 \cf0 \
+\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\sl250\slmult1\pardirnatural\partightenfactor0
+
+\f2\b\fs56 \cf2 4. Check for expired or revoked certificates
+\f0\b0\fs46 \
+\pard\tqr\tx100\tx260\li260\fi-260\sl250\slmult1\sb240\partightenfactor0
+\cf2 	\'95	
+\f2\b Expiration checks
+\f0\b0 : Even if the certificate exists on the device, verify it has not expired.\
+	\'95	
+\f2\b Revocation checks
+\f0\b0 : ADFS consults revocation lists. If the certificate was revoked or placed on a CRL, the ADFS sign-in process will fail.\
+\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\sl250\slmult1\pardirnatural\partightenfactor0
+
+\f2\b \cf2 Why
+\f0\b0 : An otherwise valid certificate can still fail if it\'92s no longer trusted by your organization\'92s certificate authority or has passed its valid date range.
+\f1\fs24 \cf0 \
+\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\sl250\slmult1\pardirnatural\partightenfactor0
+
+\f2\b\fs56 \cf2 5. Verify network connectivity and certificate chain trust
+\f0\b0\fs46 \
+\pard\tqr\tx100\tx260\li260\fi-260\sl250\slmult1\sb240\partightenfactor0
+\cf2 	\'95	
+\f2\b Network or firewall restrictions
+\f0\b0 : Ensure the device can reach both the ADFS endpoint and any CRL/OCSP endpoints required by the certificate authority.\
+	\'95	
+\f2\b Root CA trust
+\f0\b0 : Confirm that the device trusts the entire certificate chain (root and intermediate CA). If the chain is missing or not trusted, the client certificate will not be presented correctly to the ADFS server.\
+\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\sl250\slmult1\pardirnatural\partightenfactor0
+
+\f2\b \cf2 Why
+\f0\b0 : ADFS demands that the certificate chain be recognized. If the root or intermediate CA is not installed on the device or is blocked by MDM settings, the certificate exchange will fail.
+\f1\fs24 \cf0 \
+\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\sl250\slmult1\pardirnatural\partightenfactor0
+
+\f2\b\fs56 \cf2 6. Test via another client or device (if possible)
+\f0\b0\fs46 \
+\pard\tqr\tx100\tx260\li260\fi-260\sl250\slmult1\sb240\partightenfactor0
+\cf2 	\'95	
+\f2\b Compare behavior
+\f0\b0 : If you can test the same ADFS login from a desktop browser or another iOS device (with the same certificate installed), you can narrow down if the issue is device-specific or a broader ADFS/policy configuration issue.\
+	\'95	
+\f2\b Check with standard browsers
+\f0\b0 : Often, Safari or a desktop browser can give clearer error messages about certificate prompts or JavaScript issues. If it works in Safari but fails in the QuickCapture in-app browser, the WebView or the app\'92s settings are prime suspects.\
+\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\sl250\slmult1\pardirnatural\partightenfactor0
+
+\f2\b \cf2 Why
+\f0\b0 : If the same corporate certificate and user credentials work fine elsewhere, you can focus on QuickCapture\'92s sign-in method, its embedded WebView, or the device\'92s MDM restrictions.
+\f1\fs24 \cf0 \
+\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\sl250\slmult1\pardirnatural\partightenfactor0
+
+\f2\b\fs56 \cf2 Summary of Next Steps
+\f0\b0\fs46 \
+\pard\tqr\tx400\tx560\li560\fi-560\sl250\slmult1\sb240\partightenfactor0
+\AppleTypeServices\AppleTypeServicesF393216 \cf2 	1.	
+\f2\b \AppleTypeServices Validate
+\f0\b0  that your corporate certificate is correctly installed on the iOS device and not expired.\
+\AppleTypeServices\AppleTypeServicesF393216 	2.	
+\f2\b \AppleTypeServices Confirm
+\f0\b0  that JavaScript is enabled within the embedded WebView in QuickCapture (and no MDM restrictions block it).\
+\AppleTypeServices\AppleTypeServicesF393216 	3.	
+\f2\b \AppleTypeServices Review
+\f0\b0  ADFS logs and the relying party trust settings for QuickCapture, ensuring the correct authentication method is allowed and properly configured.\
+\AppleTypeServices\AppleTypeServicesF393216 	4.	
+\f2\b \AppleTypeServices Check
+\f0\b0  that the device trusts the root CA and any intermediates used by your certificate.\
+\AppleTypeServices\AppleTypeServicesF393216 	5.	
+\f2\b \AppleTypeServices Test
+\f0\b0  on another device or with a standard browser to isolate if the issue is the device or the ADFS configuration.\
+\
+Most times, installing or renewing the correct corporate-issued certificate (via your MDM profile or a manual install) and verifying that the WebView can run JavaScript resolves this kind of \'93No valid client certificate\'94 error for iOS apps authenticating against ADFS. If the problem persists, involve your IT/ADFS administrators to ensure the proper certificate-based auth policy and trust chain are in place.}
